@@ -57,3 +57,6 @@ tmp/
 
 # Keep these files
 !.gitkeep 
+
+compiled
+compiled-rojo
