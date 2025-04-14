@@ -5,12 +5,10 @@ compiled/
 *.rkt~
 *.bak
 *.ss~
+*.scrbl~
 
 # Racket package specific
 *.SCRBL
-*.html
-*.css
-*.js
 doc/
 scribblings/*.html
 scribblings/*.css
@@ -20,17 +18,42 @@ scribblings/*.js
 docs-hugo/public/
 docs-hugo/resources/_gen/
 docs-hugo/.hugo_build.lock
+.hugo_build.lock
+public/
+resources/
+
+# Node (in case we add any JS tools)
+node_modules/
+package-lock.json
 
 # OS specific
 .DS_Store
 Thumbs.db
+.directory
+*.swp
+*~
 
 # Editor specific
 .vscode/
 .idea/
-*.swp
-*~
+*.sublime-workspace
+*.sublime-project
 
 # Build artifacts
 dist/
-build/ 
+build/
+bin/
+
+# Temporary files
+*.log
+*.tmp
+.temp/
+tmp/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Keep these files
+!.gitkeep 
