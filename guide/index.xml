@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Apollo Compiler Guide on Apollo Compiler Documentation</title><link>https://yourusername.github.io/apollo/guide/</link><description>Recent content in Apollo Compiler Guide on Apollo Compiler Documentation</description><generator>Hugo</generator><language>en-us</language><atom:link href="https://yourusername.github.io/apollo/guide/index.xml" rel="self" type="application/rss+xml"/><item><title>Installation</title><link>https://yourusername.github.io/apollo/guide/installation/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://yourusername.github.io/apollo/guide/installation/</guid><description>&lt;h1 id="installation">Installation&lt;/h1>
+&lt;h2 id="prerequisites">Prerequisites&lt;/h2>
+&lt;ul>
+&lt;li>Racket 8.0 or higher (download from &lt;a href="https://racket-lang.org/">racket-lang.org&lt;/a>)&lt;/li>
+&lt;li>&lt;code>raco&lt;/code>, the Racket command-line tool (comes with Racket)&lt;/li>
+&lt;li>&lt;code>git&lt;/code> (for installing from source)&lt;/li>
+&lt;/ul>
+&lt;h2 id="installing-from-source">Installing from Source&lt;/h2>
+&lt;p>This is the recommended method for developers or those wanting the latest version.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 1. Clone the repository&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>git clone https://github.com/yourusername/apollo.git &lt;span style="color:#75715e"># Replace with actual URL&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 2. Navigate into the directory&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>cd apollo
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># 3. Install the package locally&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># This makes the `apollo` library available to Racket&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># and builds necessary components.&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>raco pkg install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h2 id="installing-from-racket-package-catalog-future">Installing from Racket Package Catalog (Future)&lt;/h2>
+&lt;p>Once published, you will be able to install directly using &lt;code>raco&lt;/code>:&lt;/p></description></item><item><title>Usage</title><link>https://yourusername.github.io/apollo/guide/usage/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://yourusername.github.io/apollo/guide/usage/</guid><description>&lt;h1 id="usage">Usage&lt;/h1>
+&lt;p>Apollo can be used both as a command-line tool and as a Racket library.&lt;/p>
+&lt;h2 id="command-line-usage-executable">Command-Line Usage (Executable)&lt;/h2>
+&lt;p>If you have built or installed the executables (see &lt;a href="https://yourusername.github.io/apollo/guide/installation/">[Installation]&lt;/a>), you can use &lt;code>apollo&lt;/code> for single files/directories and &lt;code>apollo-rojo&lt;/code> for dedicated Rojo project workflows.&lt;/p>
+&lt;h3 id="compiling-single-files">Compiling Single Files&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-bash" data-lang="bash">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Compile a single file (output defaults to input.luau)&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>apollo input.rkt
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Specify output file&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>apollo input.rkt -o output.luau
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e"># Watch for changes&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>apollo input.rkt -o output.luau --watch
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="compiling-rojo-projects">Compiling Rojo Projects&lt;/h3>
+&lt;p>&lt;strong>Using the main &lt;code>apollo&lt;/code> tool:&lt;/strong>&lt;/p></description></item><item><title>Rojo Integration</title><link>https://yourusername.github.io/apollo/guide/rojo-integration/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://yourusername.github.io/apollo/guide/rojo-integration/</guid><description>&lt;h1 id="rojo-integration">Rojo Integration&lt;/h1>
+&lt;p>This document describes how to use Apollo&amp;rsquo;s Rojo integration features to compile entire Roblox projects written in Racket to Luau.&lt;/p>
+&lt;h2 id="overview">Overview&lt;/h2>
+&lt;p>The Apollo Rojo integration allows you to:&lt;/p>
+&lt;ol>
+&lt;li>Compile entire Rojo project structures from Racket to Luau&lt;/li>
+&lt;li>Maintain proper module dependencies&lt;/li>
+&lt;li>Generate Roblox-compatible ModuleScripts&lt;/li>
+&lt;li>Preserve non-code assets and project structure&lt;/li>
+&lt;li>Automatically recompile on changes using watch mode&lt;/li>
+&lt;/ol>
+&lt;h2 id="usage">Usage&lt;/h2>
+&lt;h3 id="command-line-usage">Command-Line Usage&lt;/h3>
+&lt;p>There are two main ways to use the Rojo integration:&lt;/p></description></item><item><title>Design Document</title><link>https://yourusername.github.io/apollo/guide/design/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://yourusername.github.io/apollo/guide/design/</guid><description>&lt;h1 id="design-document-racket-to-luau-compiler-for-roblox">Design Document: Racket-to-Luau Compiler for Roblox&lt;/h1>
+&lt;h2 id="1-introduction--motivation">1. Introduction &amp;amp; Motivation&lt;/h2>
+&lt;p>Roblox game development primarily uses Luau, a gradually typed language derived from Lua. While powerful, developers coming from other ecosystems might miss features from their preferred languages. Racket is a powerful, multi-paradigm language from the Lisp family, known for its strong macro system, functional programming capabilities, and optional static type system (Typed Racket).&lt;/p>
+&lt;p>This document outlines the design for a compiler that translates Racket (and Typed Racket) code into Luau, enabling developers to leverage Racket&amp;rsquo;s features for building Roblox games and experiences. The primary goal is to combine Racket&amp;rsquo;s expressiveness and safety (especially with Typed Racket) with the ability to target the popular Roblox platform.&lt;/p></description></item><item><title>Project Structure</title><link>https://yourusername.github.io/apollo/guide/structure/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://yourusername.github.io/apollo/guide/structure/</guid><description>&lt;h1 id="apollo-compiler-project-structure">Apollo Compiler Project Structure&lt;/h1>
+&lt;h2 id="overview">Overview&lt;/h2>
+&lt;p>Apollo is a compiler that transforms Racket code into Luau (the scripting language used by Roblox). The project follows a modular architecture adhering to Racket&amp;rsquo;s best practices for library organization.&lt;/p>
+&lt;h2 id="directory-structure-post-reorganization">Directory Structure (Post-Reorganization)&lt;/h2>
+&lt;pre tabindex="0">&lt;code>.
+├── cmd/ # Command-line executables
+│ ├── apollo/ # Main compiler CLI
+│ │ └── main.rkt # Entry point for `apollo` executable
+│ └── apollo-rojo/ # Rojo integration CLI
+│ └── main.rkt # Entry point for `apollo-rojo` executable
+├── dist/ # Distribution output (generated)
+├── docs-hugo/ # Hugo documentation site source
+│ ├── content/
+│ ├── layouts/
+│ ├── static/
+│ ├── themes/
+│ └── hugo.toml
+├── examples/
+│ └── ... # Example Racket/Rojo projects
+├── scripts/
+│ ├── create-dist.sh # Script to build distribution package
+│ └── apollo-rojo.sh # Wrapper script for the Rojo tool
+├── src/
+│ ├── apollo/ # Core library source (`apollo` package)
+│ │ ├── compiler/ # Core compiler modules (parser, ir, codegen, types)
+│ │ ├── rojo/ # Rojo integration logic
+│ │ │ └── integration.rkt
+│ │ ├── private/ # Private implementation details
+│ │ │ └── utils.rkt
+│ │ ├── main.rkt # Main library module (re-exports public API)
+│ │ └── info.rkt # Collection info for `apollo` package
+│ └── scribblings/ # Racket scribble documentation (for API)
+│ └── apollo.scrbl
+├── tests/
+│ └── ... # Unit and integration tests
+├── .gitignore
+├── CONTRIBUTING.md
+├── LICENSE
+└── README.md # Minimal README pointing to docs
+&lt;/code>&lt;/pre>&lt;h2 id="module-descriptions">Module Descriptions&lt;/h2>
+&lt;h3 id="core-library-srcapollo">Core Library (&lt;code>src/apollo/&lt;/code>)&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>&lt;code>main.rkt&lt;/code>&lt;/strong>: The main library entry point (for &lt;code>require&lt;/code>ing &lt;code>apollo&lt;/code>). Re-exports the public API from compiler and potentially Rojo modules.&lt;/li>
+&lt;li>&lt;strong>&lt;code>compiler/&lt;/code>&lt;/strong>: Contains the core stages of the compilation pipeline:
+&lt;ul>
+&lt;li>&lt;code>parser.rkt&lt;/code>: Racket code parsing (String -&amp;gt; Racket AST).&lt;/li>
+&lt;li>&lt;code>ir.rkt&lt;/code>: Intermediate Representation definition and transformation (Racket AST -&amp;gt; IR).&lt;/li>
+&lt;li>&lt;code>codegen.rkt&lt;/code>: Luau code generation (IR -&amp;gt; Luau AST -&amp;gt; Luau String).&lt;/li>
+&lt;li>&lt;code>types.rkt&lt;/code>: Core data structures (AST, IR nodes).&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;strong>&lt;code>rojo/integration.rkt&lt;/code>&lt;/strong>: Logic for handling Rojo project compilation (directory traversal, dependency management for Rojo).&lt;/li>
+&lt;li>&lt;strong>&lt;code>private/utils.rkt&lt;/code>&lt;/strong>: Internal utility functions not part of the public API.&lt;/li>
+&lt;li>&lt;strong>&lt;code>info.rkt&lt;/code>&lt;/strong>: Metadata for the Racket package system.&lt;/li>
+&lt;/ul>
+&lt;h3 id="command-line-tools-cmd">Command Line Tools (&lt;code>cmd/&lt;/code>)&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>&lt;code>cmd/apollo/main.rkt&lt;/code>&lt;/strong>: Entry point for the main &lt;code>apollo&lt;/code> executable. Handles CLI argument parsing (single file, &lt;code>--rojo&lt;/code> flag, &lt;code>--watch&lt;/code>), orchestrates compilation using library modules.&lt;/li>
+&lt;li>&lt;strong>&lt;code>cmd/apollo-rojo/main.rkt&lt;/code>&lt;/strong>: Entry point for the dedicated &lt;code>apollo-rojo&lt;/code> executable. Handles CLI arguments specific to Rojo compilation (&lt;code>-v&lt;/code>, &lt;code>--watch&lt;/code>), uses the &lt;code>apollo/rojo&lt;/code> library module.&lt;/li>
+&lt;/ul>
+&lt;h3 id="scripts-scripts">Scripts (&lt;code>scripts/&lt;/code>)&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>&lt;code>create-dist.sh&lt;/code>&lt;/strong>: Builds the executables (&lt;code>apollo&lt;/code>, &lt;code>apollo-rojo&lt;/code>) and packages them with necessary files (scripts, docs, examples) into the &lt;code>dist/&lt;/code> directory.&lt;/li>
+&lt;li>&lt;strong>&lt;code>apollo-rojo.sh&lt;/code>&lt;/strong>: A simple wrapper to execute &lt;code>racket cmd/apollo-rojo/main.rkt&lt;/code>, making it easier to run the Rojo tool directly from the source tree or when installed.&lt;/li>
+&lt;/ul>
+&lt;h3 id="documentation-docs-hugo-and-srcscribblings">Documentation (&lt;code>docs-hugo/&lt;/code> and &lt;code>src/scribblings/&lt;/code>)&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>&lt;code>docs-hugo/&lt;/code>&lt;/strong>: Source files for the Hugo-based documentation website (guides, tutorials, conceptual overviews).&lt;/li>
+&lt;li>&lt;strong>&lt;code>src/scribblings/apollo.scrbl&lt;/code>&lt;/strong>: Source for the Racket Scribble-based API reference documentation, generated using &lt;code>raco docs&lt;/code>.&lt;/li>
+&lt;/ul>
+&lt;h2 id="compilation-pipeline">Compilation Pipeline&lt;/h2>
+&lt;p>The Apollo compiler transforms Racket code into Luau through the following stages (primarily within &lt;code>src/apollo/compiler/&lt;/code>):&lt;/p></description></item></channel></rss>
