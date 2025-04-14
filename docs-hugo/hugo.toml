@@ -1,7 +1,7 @@
 baseURL = "https://dunnoconz.github.io/apollo/" # CHANGE THIS
 languageCode = "en-us"
 title = "Apollo Compiler Documentation"
-theme = "" # Add a theme later, e.g., "ananke" or "book"
+theme = "blowfish" # Add a theme later, e.g., "ananke" or "book"
 
 [params]
   description = "Documentation for the Apollo Racket-to-Luau Compiler"

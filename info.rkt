@@ -1,7 +1,7 @@
 #lang info
 
 (define collection "apollo")
-(define deps '("base" "core"))
+(define deps '("base"))
 (define build-deps '("rackunit" "scribble-lib" "setup" "info"))
 (define scribblings '(("scribblings/apollo.scrbl" ())))
 (define pkg-desc "Apollo: A Racket to Luau Compiler")
