@@ -1,4 +1,4 @@
-baseURL = 'https://yourusername.github.io/apollo/'
+baseURL = 'https://dunnoconz.github.io/apollo/'
 languageCode = 'en-us'
 title = 'Apollo - Racket to Luau Compiler'
 theme = 'book'
