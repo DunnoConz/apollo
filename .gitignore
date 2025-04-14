@@ -1,0 +1,36 @@
+# Racket specific
+compiled/
+*.zo
+*.dep
+*.rkt~
+*.bak
+*.ss~
+
+# Racket package specific
+*.SCRBL
+*.html
+*.css
+*.js
+doc/
+scribblings/*.html
+scribblings/*.css
+scribblings/*.js
+
+# Hugo specific
+docs-hugo/public/
+docs-hugo/resources/_gen/
+docs-hugo/.hugo_build.lock
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Editor specific
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build artifacts
+dist/
+build/ 

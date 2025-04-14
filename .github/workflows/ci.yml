@@ -1,0 +1,31 @@
+name: Racket CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Racket
+      uses: Bogdanp/setup-racket@v1.9
+      with:
+        architecture: 'x64'
+        distribution: 'full'
+        variant: 'CS'
+        version: '8.16'
+    
+    - name: Install dependencies
+      run: raco pkg install --auto --batch
+    
+    - name: Install apollo package
+      run: raco pkg install --deps search-auto
+    
+    - name: Run tests
+      run: raco test -p apollo 
