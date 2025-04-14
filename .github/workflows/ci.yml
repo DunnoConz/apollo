@@ -21,8 +21,14 @@ jobs:
         variant: 'CS'
         version: '8.16'
     
-    - name: Install package and dependencies
-      run: raco pkg install --deps search-auto
+    - name: Install external dependencies
+      run: raco pkg install --batch rackunit scribble-lib
+    
+    - name: Link local package
+      run: raco pkg install --batch
+    
+    - name: Setup apollo package (compile)
+      run: raco setup apollo
     
     - name: Run tests
       run: raco test -p apollo 
