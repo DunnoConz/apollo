@@ -21,8 +21,8 @@ jobs:
         variant: 'CS'
         version: '8.16'
     
-    - name: Install apollo package
-      run: raco pkg install --deps search-auto
+    - name: Install apollo package and dependencies
+      run: raco setup --check-pkg-deps apollo
     
     - name: Run tests
       run: raco test -p apollo 
