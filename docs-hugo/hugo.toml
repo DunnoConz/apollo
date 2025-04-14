@@ -1,4 +1,4 @@
-baseURL = "https://yourusername.github.io/apollo/" # CHANGE THIS
+baseURL = "https://dunnoconz.github.io/apollo/" # CHANGE THIS
 languageCode = "en-us"
 title = "Apollo Compiler Documentation"
 theme = "" # Add a theme later, e.g., "ananke" or "book"
