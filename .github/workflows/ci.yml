@@ -22,7 +22,7 @@ jobs:
         version: '8.16'
     
     - name: Link local apollo package
-      run: raco pkg install
+      run: raco pkg install --batch
     
     - name: Install dependencies
       run: raco pkg install --deps search-auto
