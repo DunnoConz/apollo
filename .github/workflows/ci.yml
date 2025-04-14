@@ -22,7 +22,7 @@ jobs:
         version: '8.16'
     
     - name: Install package and dependencies
-      run: raco pkg install -i --deps search-auto
+      run: raco pkg install --deps search-auto
     
     - name: Run tests
       run: raco test -p apollo 
