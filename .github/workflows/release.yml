@@ -16,6 +16,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: true # Add this to checkout submodules (like themes)
+
+      # --- Hugo Setup and Build ---
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 'latest' # Or specify a version
+          # extended: true # Uncomment if using Sass/SCSS
+
+      - name: Build Hugo site
+        # Run hugo within the docs directory
+        # Output will be in docs/public by default
+        run: hugo --source docs/
+        shell: bash
+      # --- End Hugo Setup and Build ---
 
       - name: Set up Racket
         uses: Bogdanp/setup-racket@v1.11
@@ -23,11 +39,7 @@ jobs:
           architecture: 'x64' # Assumes x64 for all OS for now
           distribution: 'full'
           variant: 'CS'
-          version: '8.16'
-
-      - name: DEBUG Show Workflow File
-        run: cat .github/workflows/ci.yml
-        shell: bash
+          version: '8.16' # Use the version consistent with ci.yml
 
       - name: Link local package
         run: raco pkg install --batch
@@ -56,24 +68,26 @@ jobs:
         if: runner.os == 'Linux' || runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.os }}
+          name: binaries-and-docs-${{ matrix.os }} # Rename artifact to reflect content
           path: |
             apollo-binary
             apollo-rojo
             build-exe
-          retention-days: 1 # Keep artifacts only briefly
+            docs/public # Add built docs site
+          retention-days: 1
 
       - name: Upload Artifacts (Windows)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.os }}
+          name: binaries-and-docs-${{ matrix.os }} # Rename artifact to reflect content
           # Assuming .exe extensions are added by the build process
           path: |
             apollo-binary.exe
             apollo-rojo.exe
             build-exe.exe
-          retention-days: 1 # Keep artifacts only briefly
+            docs/public # Add built docs site
+          retention-days: 1
 
   release:
     name: Create GitHub Release
@@ -95,7 +109,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-assets # Download all artifacts into this directory
-          # Artifacts will be in subdirectories like release-assets/binaries-ubuntu-latest/
+          # Artifacts will be in subdirectories like release-assets/binaries-and-docs-ubuntu-latest/
+
+      - name: List downloaded files # Optional: for debugging
+        run: ls -R release-assets
+        shell: bash
 
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
