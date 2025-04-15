@@ -21,8 +21,9 @@ jobs:
         variant: 'CS'
         version: '8.16'
     
-    - name: Install external dependencies
-      run: raco pkg install --batch rackunit scribble-lib
+    # Removed explicit installation of rackunit/scribble-lib as they should be pre-installed
+    # - name: Install external dependencies
+    #   run: raco pkg install --batch rackunit scribble-lib
     
     - name: Link local package
       run: raco pkg install --batch
