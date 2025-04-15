@@ -25,6 +25,13 @@ jobs:
           variant: 'CS'
           version: '8.16'
 
+      - name: DEBUG Show Workflow File
+        run: cat .github/workflows/ci.yml
+        shell: bash
+
+      - name: Link local package
+        run: raco pkg install --batch
+
       - name: Build release binaries (Linux/macOS)
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
