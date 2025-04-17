@@ -9,14 +9,17 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      // Consider adding links to top-level sections if desired
-      // { text: 'Tutorials', link: '/tutorials/' },
-      // { text: 'How-to Guides', link: '/how-to/' },
-      // { text: 'Reference', link: '/reference/' },
-      // { text: 'Explanation', link: '/explanation/' }
+      { text: 'Guide', link: '/guide/' }
     ],
 
     sidebar: [
+      {
+        text: 'Guide',
+        items: [
+          { text: 'Introduction', link: '/guide/' },
+          { text: 'Installation', link: '/guide/installation' }
+        ]
+      },
       {
         text: 'Tutorials',
         items: [

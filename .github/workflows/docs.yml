@@ -40,7 +40,9 @@ jobs:
 
       - name: Build VitePress Site
         working-directory: ./docs
-        run: npm run docs:build
+        run: |
+          export NODE_OPTIONS=--experimental-vm-modules
+          npm run docs:build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

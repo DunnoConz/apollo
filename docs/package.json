@@ -1,6 +1,8 @@
 {
   "name": "docs",
   "version": "1.0.0",
+  "type": "module",
+  "description": "Apollo Documentation",
   "main": "index.js",
   "scripts": {
     "docs:dev": "vitepress dev",
@@ -10,9 +12,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "devDependencies": {
-    "vitepress": "^1.6.3",
-    "vue": "^3.5.13"
+    "vitepress": "^1.0.0",
+    "vue": "^3.3.0"
   }
 }
