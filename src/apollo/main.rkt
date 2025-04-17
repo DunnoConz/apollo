@@ -11,9 +11,22 @@
          (submod apollo/compiler/ir ir)
          apollo/compiler/codegen
          
-         ;; Optional Rojo integration (provide its functions)
+         ;; Optional Rojo integration
          ;; Use `dynamic-require` to avoid hard dependency if not present
          )
+
+;; Attempt to load Rojo module path for conditional export
+(define-syntax (maybe-provide-rojo stx)
+  (syntax-case stx ()
+    [(_)
+     (let ([mod
+            (with-handlers ([exn:fail? (lambda (e) #f)]) ; Handle require failure
+              (dynamic-require 'apollo/rojo/integration #f))])
+       (if mod
+           ; If require succeeded, generate the provide form
+           #'(provide (all-from-out (quote-module-path apollo/rojo/integration)))
+           ; If require failed, generate an empty begin (no-op)
+           #'(begin)))]))
 
 ;; Re-export core compilation pipeline function
 (provide compile-racket-string-to-luau)
@@ -24,11 +37,8 @@
 (provide ir->luau)
 (provide luau-ast->string)
 
-;; Attempt to provide Rojo functions if module exists
-(with-handlers ([exn:fail? (lambda (e) (void))])
-  (define rojo-module (dynamic-require 'apollo/rojo/integration #f))
-  (when rojo-module
-    (provide (all-from-out (quote-module-path apollo/rojo/integration)))))
+;; Conditionally provide Rojo functions at the top level
+(maybe-provide-rojo)
 
 ;; Helper function that combines pipeline steps (similar to old compiler-main)
 (define (compile-racket-string-to-luau str #:source-file [source #f])

@@ -1,37 +1,46 @@
-name: Deploy Hugo Documentation
+name: Deploy VitePress Documentation
 
 on:
   push:
     branches:
-      - main  # Set a branch name to trigger deployment
-  pull_request:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  # pull_request: # Keep disabled for now unless PR previews are needed
 
 jobs:
   deploy:
     runs-on: ubuntu-22.04
     permissions:
-      contents: write
+      contents: write # Needed for peaceiris/actions-gh-pages
+      pages: write    # Needed for peaceiris/actions-gh-pages with deploy_type: 'github_pages'
+      id-token: write # Needed for peaceiris/actions-gh-pages with deploy_type: 'github_pages' if OIDC is used
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true  # Fetch Hugo themes (true OR recursive)
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+          fetch-depth: 0 # Fetch all history for git info
 
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          hugo-version: '0.145.0'
-          extended: true
+          node-version: 20 # Specify desired Node.js version
+          cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
 
-      - name: Build
-        working-directory: ./docs-hugo
-        run: hugo --minify
+      - name: Install Dependencies
+        working-directory: ./docs
+        run: npm ci
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Build VitePress Site
+        working-directory: ./docs
+        run: npm run docs:build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs-hugo/public 
+          publish_dir: ./docs/.vitepress/dist 

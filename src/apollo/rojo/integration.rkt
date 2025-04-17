@@ -4,8 +4,7 @@
 ;; Handles compiling entire Rojo projects with proper dependencies
 
 (require racket/file
-         racket/path
-         racket/port
+         racket/list
          racket/string
          racket/system
          json)
@@ -14,6 +13,8 @@
 (require apollo/compiler/parser
          apollo/compiler/codegen
          (submod apollo/compiler/ir ir))
+
+(require racket/path)
 
 (provide 
  compile-rojo-project
@@ -163,8 +164,8 @@
 
 ;; Utility to extract just the file name from a path, removing extension
 (define (file-name-from-path path-obj)
-  (define name-str (path->string (basename path-obj))) ; Use basename
+  (define name-str (path->string (basename path-obj)))
   (define parts (string-split name-str "."))
   (if (> (length parts) 1)
       (string->path (car parts))
-      (string->path name-str))) ; Return original if no extension 
+      (string->path name-str))) 
