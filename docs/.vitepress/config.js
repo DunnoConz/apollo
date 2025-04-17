@@ -9,54 +9,53 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/' }
+      { text: 'Tutorials', link: '/tutorials/' },
+      { text: 'How-to Guides', link: '/how-to/' },
+      { text: 'Reference', link: '/reference/' },
+      { text: 'Explanation', link: '/explanation/' }
     ],
 
     sidebar: [
       {
-        text: 'Guide',
-        items: [
-          { text: 'Introduction', link: '/guide/' },
-          { text: 'Installation', link: '/guide/installation' }
-        ]
-      },
-      {
         text: 'Tutorials',
         items: [
-          { text: 'Installation', link: '/tutorials/installation' }, // Moved from guide
-          // Add more tutorial links here
-          { text: 'Index', link: '/tutorials/' } // Link to the section index
-        ],
-        collapsible: true, // Optional: Make section collapsible
-        collapsed: true    // Optional: Start collapsed
+          { text: 'Getting Started', link: '/tutorials/' },
+          { text: 'Installation', link: '/tutorials/installation' },
+          { text: 'First Project', link: '/tutorials/first-project' },
+          { text: 'Advanced Features', link: '/tutorials/advanced' },
+          { text: 'Advanced Macros', link: '/tutorials/advanced-macros' },
+          { text: 'Examples', link: '/tutorials/examples' }
+        ]
       },
       {
         text: 'How-to Guides',
         items: [
-          // Add how-to guide links here
-          { text: 'Index', link: '/how-to/' }
-        ],
-        collapsible: true,
-        collapsed: true
+          { text: 'Overview', link: '/how-to/' },
+          { text: 'Working with Roblox', link: '/how-to/roblox' },
+          { text: 'Debugging', link: '/how-to/debugging' },
+          { text: 'Using Macros', link: '/how-to/macros' }
+        ]
       },
       {
         text: 'Reference',
         items: [
-          // Add reference links here
-          { text: 'Index', link: '/reference/' }
-        ],
-        collapsible: true,
-        collapsed: true
+          { text: 'Overview', link: '/reference/' },
+          { text: 'CLI Reference', link: '/reference/cli' },
+          { text: 'Configuration', link: '/reference/config' },
+          { text: 'Error Messages', link: '/reference/errors' },
+          { text: 'Standard Library', link: '/reference/stdlib' },
+          { text: 'Macros', link: '/reference/macros' }
+        ]
       },
       {
         text: 'Explanation',
         items: [
-          { text: 'Introduction', link: '/explanation/introduction' }, // Moved from guide
-          // Add explanation links here
-          { text: 'Index', link: '/explanation/' }
-        ],
-        collapsible: true,
-        collapsed: true
+          { text: 'Overview', link: '/explanation/' },
+          { text: 'Introduction', link: '/explanation/introduction' },
+          { text: 'Architecture', link: '/explanation/architecture' },
+          { text: 'Type System', link: '/explanation/type-system' },
+          { text: 'Compilation Process', link: '/explanation/compilation' }
+        ]
       }
     ],
 
