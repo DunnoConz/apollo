@@ -2,389 +2,354 @@
 
 ;; GetService module for Roblox
 ;; Provides type-safe access to Roblox services
-;; 
-;; This module implements a type-safe interface to Roblox services, providing:
-;; - Type definitions for all Roblox services
-;; - Type-safe service access through get-service
-;; - Helper functions for common service access
-;; - Proper type casting and error handling
+;;
+;; This module provides a type-safe interface to Roblox services using Typed Racket's
+;; class system. It includes implementations for all standard Roblox services and
+;; provides helper functions for accessing them.
 ;;
 ;; Example usage:
-;; (get-service 'Workspace)  ; Returns a Workspace service instance
-;; (get-workspace)          ; Helper function for Workspace service
+;; (get-service 'Workspace)  ; Get the Workspace service
+;; (get-workspace)          ; Same as above, but type-safe
+;;
+;; @author Apollo Team
+;; @version 1.0.0
 
 (require typed/racket/class)
 
 (provide
+ Instance<%>
+ Service<%>
+ get-service
+ get-workspace
  (all-defined-out))
 
-;; Define base types
-;; Instance is the base type for all Roblox objects
-;; @field name: Returns the name of the instance
-;; @field parent: Returns the parent instance
-;; @field findFirstChild: Finds a child instance by name
-;; @field getChildren: Returns all child instances
-;; @field getDescendants: Returns all descendant instances
-;; @field destroy: Removes the instance from the game
-(define-type Instance
+;; Define base class
+;; Instance% represents the base class for all Roblox instances
+(define-type Instance<%>
   (Class
-   [name (-> String)]
-   [parent (-> Instance)]
-   [findFirstChild (-> String (Option Instance))]
-   [getChildren (-> (Vectorof Instance))]
-   [getDescendants (-> (Vectorof Instance))]
-   [destroy (-> Void)]))
+   [get-name (-> String)]           ; Get the name of the instance
+   [get-parent (-> (Option Instance<%>))]  ; Get the parent instance
+   [get-children (-> (Vectorof Instance<%>))]  ; Get all child instances
+   [is-archivable (-> Boolean)]     ; Check if the instance is archivable
+   [destroy (-> Void)]))            ; Destroy the instance
 
-;; Service is a specialized Instance that represents a Roblox service
-;; @field name: Returns the name of the service
-;; @field parent: Returns the parent instance (usually game)
-(define-type Service
-  (Class #:implements Instance
-   [name (-> String)]
-   [parent (-> Instance)]))
+;; Define service interface
+;; Service<%> represents a Roblox service
+(define-type Service<%>
+  (Class
+   #:implements Instance<%>
+   [get-service-name (-> String)]   ; Get the name of the service
+   [get-service (-> Symbol (Instance Service<%>))]))  ; Get another service by name
 
-;; Core Roblox services
-;; Each service type extends the base Service type
-;; and provides service-specific functionality
-(define-type DataStoreService Service)  ;; Manages data persistence
-(define-type Players Service)           ;; Manages player instances
-(define-type ReplicatedStorage Service) ;; Stores data replicated to clients
-(define-type ServerStorage Service)     ;; Stores data on server only
-(define-type ServerScriptService Service) ;; Runs server-side scripts
-(define-type StarterPlayer Service)     ;; Manages player settings
-(define-type StarterPlayerScripts Service) ;; Scripts that run in new players
-(define-type StarterGui Service)        ;; Manages GUI elements for new players
-(define-type Workspace Service)         ;; Contains the 3D world
-(define-type Lighting Service)          ;; Controls lighting and environment
-(define-type RunService Service)        ;; Controls game loop and timing
-(define-type UserInputService Service)  ;; Handles user input
-(define-type HttpService Service)       ;; Makes HTTP requests
-(define-type TweenService Service)      ;; Creates animations
-(define-type SoundService Service)      ;; Manages audio
-(define-type TeleportService Service)   ;; Handles player teleportation
-(define-type MarketplaceService Service) ;; Manages game passes and items
-(define-type PathfindingService Service) ;; Handles pathfinding
-(define-type PhysicsService Service)    ;; Controls physics behavior
-(define-type CollectionService Service) ;; Manages collections of instances
-(define-type Chat Service)              ;; Manages chat system
-(define-type Teams Service)             ;; Manages teams
-(define-type GroupService Service)      ;; Manages Roblox groups
-(define-type SocialService Service)     ;; Handles social features
-(define-type AnalyticsService Service)  ;; Provides analytics data
-(define-type GamePassService Service)   ;; Manages game passes
-(define-type BadgeService Service)      ;; Manages badges
-(define-type DataStore2 Service)        ;; Alternative data store service
-
-;; Base service implementation
-;; Provides default implementations for all Instance methods
-;; @field name: Returns empty string by default
-;; @field parent: Returns a new instance as parent
-;; @field findFirstChild: Returns #f by default
-;; @field getChildren: Returns empty vector by default
-;; @field getDescendants: Returns empty vector by default
-;; @field destroy: Does nothing by default
-(define service%
+;; Define base class implementation
+(define instance% : Instance<%>
   (class object%
     (super-new)
-    (: name (-> String))
-    (define/public (name) "")
-    (: parent (-> Instance))
-    (define/public (parent) (cast (new instance%) Instance))
-    (: findFirstChild (-> String (Option Instance)))
-    (define/public (findFirstChild name) #f)
-    (: getChildren (-> (Vectorof Instance)))
-    (define/public (getChildren) (vector))
-    (: getDescendants (-> (Vectorof Instance)))
-    (define/public (getDescendants) (vector))
-    (: destroy (-> Void))
+    (define/public (get-name) "")
+    (define/public (get-parent) #f)
+    (define/public (get-children) (vector))
+    (define/public (is-archivable) #t)
     (define/public (destroy) (void))))
 
-;; Base instance implementation
-;; Similar to service% but implements Instance type
-;; @see service% for method documentation
-(: instance% (Class #:implements Instance
-                   [name (-> String)]
-                   [parent (-> Instance)]
-                   [findFirstChild (-> String (Option Instance))]
-                   [getChildren (-> (Vectorof Instance))]
-                   [getDescendants (-> (Vectorof Instance))]
-                   [destroy (-> Void)]))
-(define instance%
-  (class object%
+;; Define service class implementation
+(define service% : Service<%>
+  (class instance%
     (super-new)
-    (: name (-> String))
-    (define/public (name) "")
-    (: parent (-> Instance))
-    (define/public (parent) (cast (new instance%) Instance))
-    (: findFirstChild (-> String (Option Instance)))
-    (define/public (findFirstChild name) #f)
-    (: getChildren (-> (Vectorof Instance)))
-    (define/public (getChildren) (vector))
-    (: getDescendants (-> (Vectorof Instance)))
-    (define/public (getDescendants) (vector))
-    (: destroy (-> Void))
-    (define/public (destroy) (void))))
+    (define/public (get-service-name) "")
+    (define/public (get-service name) (get-service name))))
 
-;; Service implementations
-;; Each service class extends service% and can override methods
-;; as needed for service-specific functionality
-(define workspace%
+;; Define specific service classes
+;; DataStoreService provides access to Roblox's data storage system
+(define datastore-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "DataStoreService")))
 
-(define players%
+;; Players service manages player instances and provides player-related functionality
+(define players-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "Players")))
 
-(define replicated-storage%
+;; Workspace service represents the 3D world of the game
+(define workspace-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "Workspace")))
 
-(define server-storage%
+(define replicated-storage-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "ReplicatedStorage")))
 
-(define server-script-service%
+(define server-storage-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "ServerStorage")))
 
-(define starter-player%
+(define server-script-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "ServerScriptService")))
 
-(define starter-player-scripts%
+(define starter-player-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "StarterPlayer")))
 
-(define starter-gui%
+(define starter-player-scripts-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "StarterPlayerScripts")))
 
-(define lighting%
+(define starter-gui-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "StarterGui")))
 
-(define run-service%
+(define lighting-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "Lighting")))
 
-(define user-input-service%
+(define run-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "RunService")))
 
-(define http-service%
+(define user-input-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "UserInputService")))
 
-(define tween-service%
+(define http-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "HttpService")))
 
-(define sound-service%
+(define tween-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "TweenService")))
 
-(define teleport-service%
+(define sound-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "SoundService")))
 
-(define marketplace-service%
+(define teleport-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "TeleportService")))
 
-(define pathfinding-service%
+(define marketplace-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "MarketplaceService")))
 
-(define physics-service%
+(define pathfinding-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "PathfindingService")))
 
-(define collection-service%
+(define physics-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "PhysicsService")))
 
-(define chat%
+(define collection-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "CollectionService")))
 
-(define teams%
+(define chat-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "Chat")))
 
-(define group-service%
+(define teams-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "Teams")))
 
-(define social-service%
+(define group-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "GroupService")))
 
-(define analytics-service%
+(define social-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "SocialService")))
 
-(define game-pass-service%
+(define analytics-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "AnalyticsService")))
 
-(define badge-service%
+(define game-pass-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "GamePassService")))
 
-(define data-store2%
+(define badge-service% : Service<%>
   (class service%
-    (super-new)))
+    (super-new)
+    (define/override (get-service-name) "BadgeService")))
 
-;; GetService function with type safety
-;; @param service-name: Symbol representing the service to get
-;; @return: Instance of the requested service
-;; @throws: Error if service-name is unknown
-(: get-service (-> Symbol Service))
+(define datastore2-service% : Service<%>
+  (class service%
+    (super-new)
+    (define/override (get-service-name) "DataStore2")))
+
+;; Helper functions with proper type signatures
+(: get-service (-> Symbol (Instance Service<%>)))
 (define (get-service service-name)
   (case service-name
-    [(DataStoreService) (cast (new data-store2%) DataStoreService)]
-    [(Players) (cast (new players%) Players)]
-    [(ReplicatedStorage) (cast (new replicated-storage%) ReplicatedStorage)]
-    [(ServerStorage) (cast (new server-storage%) ServerStorage)]
-    [(ServerScriptService) (cast (new server-script-service%) ServerScriptService)]
-    [(StarterPlayer) (cast (new starter-player%) StarterPlayer)]
-    [(StarterPlayerScripts) (cast (new starter-player-scripts%) StarterPlayerScripts)]
-    [(StarterGui) (cast (new starter-gui%) StarterGui)]
-    [(Workspace) (cast (new workspace%) Workspace)]
-    [(Lighting) (cast (new lighting%) Lighting)]
-    [(RunService) (cast (new run-service%) RunService)]
-    [(UserInputService) (cast (new user-input-service%) UserInputService)]
-    [(HttpService) (cast (new http-service%) HttpService)]
-    [(TweenService) (cast (new tween-service%) TweenService)]
-    [(SoundService) (cast (new sound-service%) SoundService)]
-    [(TeleportService) (cast (new teleport-service%) TeleportService)]
-    [(MarketplaceService) (cast (new marketplace-service%) MarketplaceService)]
-    [(PathfindingService) (cast (new pathfinding-service%) PathfindingService)]
-    [(PhysicsService) (cast (new physics-service%) PhysicsService)]
-    [(CollectionService) (cast (new collection-service%) CollectionService)]
-    [(Chat) (cast (new chat%) Chat)]
-    [(Teams) (cast (new teams%) Teams)]
-    [(GroupService) (cast (new group-service%) GroupService)]
-    [(SocialService) (cast (new social-service%) SocialService)]
-    [(AnalyticsService) (cast (new analytics-service%) AnalyticsService)]
-    [(GamePassService) (cast (new game-pass-service%) GamePassService)]
-    [(BadgeService) (cast (new badge-service%) BadgeService)]
-    [(DataStore2) (cast (new data-store2%) DataStore2)]
+    [(DataStoreService) (new datastore-service%)]
+    [(Players) (new players-service%)]
+    [(ReplicatedStorage) (new replicated-storage-service%)]
+    [(ServerStorage) (new server-storage-service%)]
+    [(ServerScriptService) (new server-script-service%)]
+    [(StarterPlayer) (new starter-player-service%)]
+    [(StarterPlayerScripts) (new starter-player-scripts-service%)]
+    [(StarterGui) (new starter-gui-service%)]
+    [(Workspace) (new workspace-service%)]
+    [(Lighting) (new lighting-service%)]
+    [(RunService) (new run-service%)]
+    [(UserInputService) (new user-input-service%)]
+    [(HttpService) (new http-service%)]
+    [(TweenService) (new tween-service%)]
+    [(SoundService) (new sound-service%)]
+    [(TeleportService) (new teleport-service%)]
+    [(MarketplaceService) (new marketplace-service%)]
+    [(PathfindingService) (new pathfinding-service%)]
+    [(PhysicsService) (new physics-service%)]
+    [(CollectionService) (new collection-service%)]
+    [(Chat) (new chat-service%)]
+    [(Teams) (new teams-service%)]
+    [(GroupService) (new group-service%)]
+    [(SocialService) (new social-service%)]
+    [(AnalyticsService) (new analytics-service%)]
+    [(GamePassService) (new game-pass-service%)]
+    [(BadgeService) (new badge-service%)]
+    [(DataStore2) (new datastore2-service%)]
     [else (error (format "Unknown service: ~a" service-name))]))
 
-;; Helper functions for common services
-;; Each function returns a properly typed service instance
-;; @return: Instance of the requested service type
-
-(: get-data-store-service (-> DataStoreService))
+;; Type-safe helper functions
+;; Get the DataStoreService instance
+(: get-data-store-service (-> (Instance Service<%>)))
 (define (get-data-store-service)
-  (cast (get-service 'DataStoreService) DataStoreService))
+  (get-service 'DataStoreService))
 
-(: get-players (-> Players))
+;; Get the Players service instance
+(: get-players (-> (Instance Service<%>)))
 (define (get-players)
-  (cast (get-service 'Players) Players))
+  (get-service 'Players))
 
-(: get-replicated-storage (-> ReplicatedStorage))
-(define (get-replicated-storage)
-  (cast (get-service 'ReplicatedStorage) ReplicatedStorage))
-
-(: get-server-storage (-> ServerStorage))
-(define (get-server-storage)
-  (cast (get-service 'ServerStorage) ServerStorage))
-
-(: get-server-script-service (-> ServerScriptService))
-(define (get-server-script-service)
-  (cast (get-service 'ServerScriptService) ServerScriptService))
-
-(: get-starter-player (-> StarterPlayer))
-(define (get-starter-player)
-  (cast (get-service 'StarterPlayer) StarterPlayer))
-
-(: get-starter-player-scripts (-> StarterPlayerScripts))
-(define (get-starter-player-scripts)
-  (cast (get-service 'StarterPlayerScripts) StarterPlayerScripts))
-
-(: get-starter-gui (-> StarterGui))
-(define (get-starter-gui)
-  (cast (get-service 'StarterGui) StarterGui))
-
-(: get-workspace (-> Workspace))
+;; Get the Workspace service instance
+(: get-workspace (-> (Instance Service<%>)))
 (define (get-workspace)
-  (cast (get-service 'Workspace) Workspace))
+  (get-service 'Workspace))
 
-(: get-lighting (-> Lighting))
+(: get-replicated-storage (-> (Instance Service<%>)))
+(define (get-replicated-storage)
+  (get-service 'ReplicatedStorage))
+
+(: get-server-storage (-> (Instance Service<%>)))
+(define (get-server-storage)
+  (get-service 'ServerStorage))
+
+(: get-server-script-service (-> (Instance Service<%>)))
+(define (get-server-script-service)
+  (get-service 'ServerScriptService))
+
+(: get-starter-player (-> (Instance Service<%>)))
+(define (get-starter-player)
+  (get-service 'StarterPlayer))
+
+(: get-starter-player-scripts (-> (Instance Service<%>)))
+(define (get-starter-player-scripts)
+  (get-service 'StarterPlayerScripts))
+
+(: get-starter-gui (-> (Instance Service<%>)))
+(define (get-starter-gui)
+  (get-service 'StarterGui))
+
+(: get-lighting (-> (Instance Service<%>)))
 (define (get-lighting)
-  (cast (get-service 'Lighting) Lighting))
+  (get-service 'Lighting))
 
-(: get-run-service (-> RunService))
+(: get-run-service (-> (Instance Service<%>)))
 (define (get-run-service)
-  (cast (get-service 'RunService) RunService))
+  (get-service 'RunService))
 
-(: get-user-input-service (-> UserInputService))
+(: get-user-input-service (-> (Instance Service<%>)))
 (define (get-user-input-service)
-  (cast (get-service 'UserInputService) UserInputService))
+  (get-service 'UserInputService))
 
-(: get-http-service (-> HttpService))
+(: get-http-service (-> (Instance Service<%>)))
 (define (get-http-service)
-  (cast (get-service 'HttpService) HttpService))
+  (get-service 'HttpService))
 
-(: get-tween-service (-> TweenService))
+(: get-tween-service (-> (Instance Service<%>)))
 (define (get-tween-service)
-  (cast (get-service 'TweenService) TweenService))
+  (get-service 'TweenService))
 
-(: get-sound-service (-> SoundService))
+(: get-sound-service (-> (Instance Service<%>)))
 (define (get-sound-service)
-  (cast (get-service 'SoundService) SoundService))
+  (get-service 'SoundService))
 
-(: get-teleport-service (-> TeleportService))
+(: get-teleport-service (-> (Instance Service<%>)))
 (define (get-teleport-service)
-  (cast (get-service 'TeleportService) TeleportService))
+  (get-service 'TeleportService))
 
-(: get-marketplace-service (-> MarketplaceService))
+(: get-marketplace-service (-> (Instance Service<%>)))
 (define (get-marketplace-service)
-  (cast (get-service 'MarketplaceService) MarketplaceService))
+  (get-service 'MarketplaceService))
 
-(: get-pathfinding-service (-> PathfindingService))
+(: get-pathfinding-service (-> (Instance Service<%>)))
 (define (get-pathfinding-service)
-  (cast (get-service 'PathfindingService) PathfindingService))
+  (get-service 'PathfindingService))
 
-(: get-physics-service (-> PhysicsService))
+(: get-physics-service (-> (Instance Service<%>)))
 (define (get-physics-service)
-  (cast (get-service 'PhysicsService) PhysicsService))
+  (get-service 'PhysicsService))
 
-(: get-collection-service (-> CollectionService))
+(: get-collection-service (-> (Instance Service<%>)))
 (define (get-collection-service)
-  (cast (get-service 'CollectionService) CollectionService))
+  (get-service 'CollectionService))
 
-(: get-chat (-> Chat))
+(: get-chat (-> (Instance Service<%>)))
 (define (get-chat)
-  (cast (get-service 'Chat) Chat))
+  (get-service 'Chat))
 
-(: get-teams (-> Teams))
+(: get-teams (-> (Instance Service<%>)))
 (define (get-teams)
-  (cast (get-service 'Teams) Teams))
+  (get-service 'Teams))
 
-(: get-group-service (-> GroupService))
+(: get-group-service (-> (Instance Service<%>)))
 (define (get-group-service)
-  (cast (get-service 'GroupService) GroupService))
+  (get-service 'GroupService))
 
-(: get-social-service (-> SocialService))
+(: get-social-service (-> (Instance Service<%>)))
 (define (get-social-service)
-  (cast (get-service 'SocialService) SocialService))
+  (get-service 'SocialService))
 
-(: get-analytics-service (-> AnalyticsService))
+(: get-analytics-service (-> (Instance Service<%>)))
 (define (get-analytics-service)
-  (cast (get-service 'AnalyticsService) AnalyticsService))
+  (get-service 'AnalyticsService))
 
-(: get-game-pass-service (-> GamePassService))
+(: get-game-pass-service (-> (Instance Service<%>)))
 (define (get-game-pass-service)
-  (cast (get-service 'GamePassService) GamePassService))
+  (get-service 'GamePassService))
 
-(: get-badge-service (-> BadgeService))
+(: get-badge-service (-> (Instance Service<%>)))
 (define (get-badge-service)
-  (cast (get-service 'BadgeService) BadgeService))
+  (get-service 'BadgeService))
 
-(: get-data-store2 (-> DataStore2))
-(define (get-data-store2)
-  (cast (get-service 'DataStore2) DataStore2)) 
+(: get-datastore2 (-> (Instance Service<%>)))
+(define (get-datastore2)
+  (get-service 'DataStore2))
+
+;; ... remaining helper functions ...
