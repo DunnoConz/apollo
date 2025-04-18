@@ -10,13 +10,11 @@
          json
          racket/match
          racket/path
-         apollo/compiler/ir-types
-         apollo/compiler/ctfe
-         apollo/compiler/ir)
-
-;; Use package requires
-(require apollo/compiler/parser
-         apollo/compiler/codegen)
+         "../compiler/ir-types.rkt"
+         "../compiler/ctfe.rkt"
+         "../compiler/ir.rkt"
+         "../compiler/parser.rkt"
+         "../compiler/codegen.rkt")
 
 (provide 
  compile-rojo-project

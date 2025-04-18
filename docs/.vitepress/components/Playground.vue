@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import MonacoEditor from './MonacoEditor.vue'
 
 const code = ref(`#lang racket
@@ -70,7 +70,6 @@ const editorOptions = {
 }
 
 const handleEditorDidMount = (editor) => {
-  // You can access the editor instance here if needed
   console.log('Editor mounted', editor)
 }
 
@@ -125,22 +124,22 @@ const resetCode = () => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin: 2rem 0;
-  border: 1px solid var(--vp-c-divider);
+  padding: 1rem;
+  background: var(--vp-c-bg);
   border-radius: 8px;
-  overflow: hidden;
+  border: 1px solid var(--vp-c-divider);
 }
 
 .editor-container {
-  height: 400px;
-  border-bottom: 1px solid var(--vp-c-divider);
+  height: 300px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .controls {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--vp-c-bg-soft);
+  gap: 0.5rem;
 }
 
 .run-button, .reset-button {
@@ -149,12 +148,6 @@ const resetCode = () => {
   border: none;
   cursor: pointer;
   font-weight: 500;
-  transition: opacity 0.2s;
-}
-
-.run-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .run-button {
@@ -162,29 +155,28 @@ const resetCode = () => {
   color: white;
 }
 
-.reset-button {
-  background: var(--vp-c-bg-alt);
-  color: var(--vp-c-text-1);
+.run-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.output-container {
-  display: flex;
-  flex-direction: column;
-  background: var(--vp-c-bg-soft);
+.reset-button {
+  background: var(--vp-c-gray-2);
+  color: var(--vp-c-text-1);
 }
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid var(--vp-c-divider);
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .tabs button {
-  padding: 0.5rem 1rem;
-  background: none;
+  padding: 0.25rem 0.5rem;
   border: none;
+  background: none;
   cursor: pointer;
   color: var(--vp-c-text-2);
-  transition: color 0.2s;
 }
 
 .tabs button.active {
@@ -192,22 +184,21 @@ const resetCode = () => {
   border-bottom: 2px solid var(--vp-c-brand);
 }
 
-.output-content {
+.output-container {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 4px;
   padding: 1rem;
   min-height: 100px;
 }
 
-.output {
-  margin: 0;
-  white-space: pre-wrap;
+.output-content {
   font-family: monospace;
+  white-space: pre-wrap;
 }
 
 .error {
   color: var(--vp-c-red);
   font-family: monospace;
-  padding: 1rem;
-  background: var(--vp-c-red-soft);
-  border-radius: 4px;
+  white-space: pre-wrap;
 }
 </style> 

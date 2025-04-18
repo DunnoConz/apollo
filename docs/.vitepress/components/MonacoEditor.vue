@@ -117,21 +117,17 @@ onMounted(async () => {
     })
   }
 
-  // Create editor instance
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: props.language,
     theme: props.theme,
-    ...props.options,
-    automaticLayout: true
+    ...props.options
   })
 
-  // Handle model changes
   editor.onDidChangeModelContent(() => {
     emit('update:modelValue', editor.getValue())
   })
 
-  // Emit editor instance
   emit('editorDidMount', editor)
 })
 
@@ -141,7 +137,6 @@ onBeforeUnmount(() => {
   }
 })
 
-// Watch for prop changes
 watch(() => props.modelValue, (newValue) => {
   if (editor && newValue !== editor.getValue()) {
     editor.setValue(newValue)
@@ -159,17 +154,12 @@ watch(() => props.theme, (newValue) => {
     monaco.editor.setTheme(newValue)
   }
 })
-
-watch(() => props.options, (newValue) => {
-  if (editor) {
-    editor.updateOptions(newValue)
-  }
-}, { deep: true })
 </script>
 
 <style scoped>
 .monaco-editor {
-  height: 100%;
   width: 100%;
+  height: 100%;
+  min-height: 300px;
 }
 </style> 
