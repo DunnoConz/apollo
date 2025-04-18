@@ -29,34 +29,27 @@
 
 ;; String interning with cache locality
 (define (intern-string str state)
-  (let ([strings (codegen-state-strings state)]
-        [values (string-batch-values strings)]
-        [indices (string-batch-indices strings)])
+  (let ([string-batch (codegen-state-strings state)]
+        [values (string-batch-values string-batch)]
+        [indices (string-batch-indices string-batch)])
     (or (hash-ref indices str #f)
         (let ([idx (length values)])
-          (set-string-batch-values! strings (cons str values))
+          (set-string-batch-values! string-batch (cons str values))
           (hash-set! indices str idx)
           idx))))
 
 ;; Batch string operations
 (define (batch-string-join strs sep state)
-  (let ([strings (codegen-state-strings state)]
-        [values (string-batch-values strings)])
+  (let ([string-batch (codegen-state-strings state)]
+        [values (string-batch-values string-batch)])
     (if (null? strs)
         ""
         (let loop ([acc (list-ref values (intern-string (car strs) state))]
                    [rest (cdr strs)])
           (if (null? rest)
               acc
-              (let ([next (list-ref values (intern-string (car rest) state))])
-                (loop (string-append acc sep next)
-                      (cdr rest))))))))
-
-;; Helper function to get string batch indices
-(define (string-batch-indices strings)
-  (for/hash ([str strings]
-             [i (in-naturals)])
-    (values str i)))
+              (loop (string-append acc sep (list-ref values (intern-string (car rest) state)))
+                    (cdr rest)))))))
 
 ;; Optimized function name conversion with batching
 (define (batch-function-name name state)
@@ -231,9 +224,9 @@
 
 ;; Convert IR values to strings with DOD optimization
 (define (ir-value->string value state)
-  (let ([strings (codegen-state-strings state)]
-        [values (string-batch-values strings)]
-        [indices (string-batch-indices strings)])
+  (let ([string-batch (codegen-state-strings state)]
+        [values (string-batch-values string-batch)]
+        [indices (string-batch-indices string-batch)])
     (or (hash-ref indices value #f)
         (let ([result
                (match value
@@ -244,7 +237,7 @@
                  [(? symbol?) (batch-function-name value state)]
                  [_ (error (format "Unsupported value type: ~a" value))])])
           (let ([idx (length values)])
-            (set-string-batch-values! strings (cons result values))
+            (set-string-batch-values! string-batch (cons result values))
             (hash-set! indices value idx)
             result)))))
 

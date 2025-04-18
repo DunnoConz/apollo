@@ -25,4 +25,17 @@
 (define test-omit-paths '("private"))
 
 ;; Define the main module
-(define main-module "src/apollo/main.rkt") 
+(define main-module "src/apollo/main.rkt")
+
+;; Define the collection structure
+(define collection-links
+  '("src/apollo/compiler"
+    "src/apollo/rojo"
+    "src/apollo/std"))
+
+;; Define the collection hierarchy
+(define collection-hierarchy
+  '("apollo"
+    ("compiler" "src/apollo/compiler")
+    ("rojo" "src/apollo/rojo")
+    ("std" "src/apollo/std"))) 

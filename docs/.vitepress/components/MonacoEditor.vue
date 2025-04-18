@@ -30,8 +30,9 @@ const emit = defineEmits(['update:modelValue', 'editorDidMount'])
 const editorContainer = ref(null)
 let editor = null
 
-// Initialize Monaco
-loader.init().then(monaco => {
+onMounted(async () => {
+  const monaco = await loader.init()
+  
   // Register Racket language
   monaco.languages.register({ id: 'racket' })
   
@@ -94,11 +95,8 @@ loader.init().then(monaco => {
       ]
     }
   })
-})
 
-onMounted(async () => {
-  const monaco = await loader.init()
-  
+  // Create editor instance
   editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: props.language,
@@ -106,10 +104,12 @@ onMounted(async () => {
     ...props.options
   })
 
+  // Set up model value sync
   editor.onDidChangeModelContent(() => {
     emit('update:modelValue', editor.getValue())
   })
 
+  // Emit editor instance
   emit('editorDidMount', editor)
 })
 
@@ -119,6 +119,7 @@ onBeforeUnmount(() => {
   }
 })
 
+// Watch for prop changes
 watch(() => props.modelValue, (newValue) => {
   if (editor && newValue !== editor.getValue()) {
     editor.setValue(newValue)
@@ -136,11 +137,17 @@ watch(() => props.theme, (newValue) => {
     monaco.editor.setTheme(newValue)
   }
 })
+
+watch(() => props.options, (newValue) => {
+  if (editor) {
+    editor.updateOptions(newValue)
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
 .monaco-editor {
-  width: 100%;
   height: 100%;
+  width: 100%;
 }
 </style> 
