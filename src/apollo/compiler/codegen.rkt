@@ -2,8 +2,10 @@
 
 (require racket/match
          racket/list
-         "./types.rkt"
-         (prefix-in ir: (submod "./ir.rkt" ir))
+         racket/path
+         "ir-types.rkt"
+         (prefix-in ir: "./ir.rkt")
+         "ctfe.rkt"
          racket/string)
 
 (provide ir->luau luau-ast->string)
@@ -11,18 +13,122 @@
 (struct luau-quasiquote (pattern) #:prefab)
 (struct luau-unquote (pattern) #:prefab)
 
+;; String caching for common values
+(define string-cache (make-hash))
+(define (cache-string key value)
+  (hash-set! string-cache key value)
+  value)
+
+(define (get-cached-string key)
+  (hash-ref string-cache key #f))
+
+;; Symbol table for string interning
+(define symbol-table (make-hash))
+(define (intern-string str)
+  (or (hash-ref symbol-table str #f)
+      (let ([interned (string->immutable-string str)])
+        (hash-set! symbol-table str interned)
+        interned)))
+
+;; Optimized string operations
+(define (string-join* strs sep)
+  (if (null? strs)
+      ""
+      (let loop ([acc (car strs)]
+                 [rest (cdr strs)])
+        (if (null? rest)
+            acc
+            (loop (string-append acc sep (car rest))
+                  (cdr rest))))))
+
+;; Optimized string escaping with caching
+(define escape-cache (make-hash))
+(define (escape-string str)
+  (or (hash-ref escape-cache str #f)
+      (let ([escaped (regexp-replace* #rx"[\"\\]" str "\\&")])
+        (hash-set! escape-cache str escaped)
+        escaped)))
+
+;; Optimized function name conversion
+(define fn-name-cache (make-hash))
+(define (luau-function-name name)
+  (or (hash-ref fn-name-cache name #f)
+      (let ([converted (regexp-replace* #rx"-" (symbol->string name) "_")])
+        (hash-set! fn-name-cache name converted)
+        converted)))
+
+;; Current module name for context
+(define current-module-name (make-parameter ""))
+
+;; Convert a function definition to Luau with proper formatting
+(define (convert-function-def name formals kw-formals body)
+  (let* ([func-name (luau-function-name name)]
+         [param-names (map luau-function-name formals)]
+         [params-str (string-join* param-names ", ")]
+         [body-exprs (filter string? (map ir->luau body))]
+         [kw-handling (if (null? kw-formals)
+                         ""
+                         (string-append
+                          "\n    local args = {...}\n"
+                          (string-join*
+                           (map (lambda (kw-pair)
+                                 (format "    local ~a = args[\"~a\"] or ~a"
+                                         (luau-function-name (keyword->string (car kw-pair)))
+                                         (keyword->string (car kw-pair))
+                                         (ir->luau (cadr kw-pair))))
+                               kw-formals)
+                           "\n")
+                          "\n"))]
+         [body-str (string-join* body-exprs "\n    ")])
+    (format "function ~a.~a(~a)~a    ~a\nend\n" 
+            (current-module-name)
+            func-name
+            params-str 
+            kw-handling
+            body-str)))
+
+;; Convert IR values to strings with caching
+(define (ir-value->string value)
+  (or (get-cached-string value)
+      (let ([result
+             (match value
+               [(? number?) (number->string value)]
+               [(? string?) (format "\"~a\"" (escape-string value))]
+               [(? boolean?) (if value "true" "false")]
+               ['null "nil"]
+               [(? symbol?) (luau-function-name value)]
+               [_ (error (format "Unsupported value type: ~a" value))])])
+        (cache-string value result))))
+
+;; Convert IR to Luau code
 (define (ir->luau node)
   (match node
-    [(ir:ir-literal value)
-     (cond
-       [(number? value) value]
-       [(string? value) (format "~s" value)]
-       [(boolean? value) (if value "true" "false")]
-       [(null? value) "{}"]
-       [else (format "nil -- unsupported literal: ~a" value)])]
+    [(ir:ir-ctfe expr)
+     ;; Evaluate CTFE expression and convert result to Luau
+     (let ([result (ctfe-eval expr (init-ctfe-env))])
+       (ir-value->string result))]
     
-    [(ir:ir-var-ref name) 
-     (let ([name-str (symbol->string name)])
+    [(ir:ir-program modules)
+     (let ([module-code (filter string? (map ir->luau modules))])
+       (string-join module-code "\n\n"))]
+    
+    [(ir:ir-module name path body)
+     (let* ([module-name (luau-function-name name)]
+            [module-path (if path (path->string path) module-name)])
+       (parameterize ([current-module-name module-name])
+         (let* ([body-code (filter string? (map ir->luau body))]
+                [body-str (string-join body-code "\n\n")])
+           (format "local ~a = {}\n\n-- Module: ~a\n~a\n\nreturn ~a" 
+                   module-name
+                   module-path 
+                   body-str 
+                   module-name))))]
+    
+    [(ir:ir-literal value)
+     (ir-value->string value)]
+    
+    [(ir:ir-var-ref name)
+     (let ([name-str (luau-function-name name)])
        (cond
          [(eq? name '+) "+"]
          [(eq? name '-) "-"]
@@ -43,99 +149,139 @@
           "(function(t) local result = {}; for i=2,#t do result[i-1] = t[i] end; return result; end)"]
          [else name-str]))]
     
-    [(ir:ir-lambda formals body)
-     (let* ([param-names (map symbol->string formals)]
-            [params-str (string-join param-names ", ")]
-            [body-exprs (map ir->luau body)]
-            [body-str (string-join body-exprs "\n")])
-       (format "function(~a)\n~a\nend" params-str body-str))]
+    [(ir:ir-lambda formals kw-formals body)
+     (let* ([param-names (map luau-function-name formals)]
+            [params-str (string-join* param-names ", ")]
+            [body-exprs (filter string? (map ir->luau body))]
+            [kw-handling (if (null? kw-formals)
+                           ""
+                           (string-append
+                            "\n  local args = {...}\n"
+                            (string-join*
+                             (map (lambda (kw-pair)
+                                   (format "  local ~a = args[\"~a\"] or ~a"
+                                           (luau-function-name (keyword->string (car kw-pair)))
+                                           (keyword->string (car kw-pair))
+                                           (ir->luau (cadr kw-pair))))
+                                 kw-formals)
+                             "\n")
+                            "\n"))]
+            [body-str (string-join* body-exprs "\n  ")])
+       (format "function(~a)~a  ~a\nend" 
+               params-str 
+               kw-handling
+               body-str))]
     
-    [(ir:ir-app func args)
-     (let* ([func-luau (ir->luau func)]
-            [args-strs (map (lambda (arg)
-                              (let ([result (ir->luau arg)])
-                                (if (string? result)
-                                    result
-                                    (format "~a" result))))
-                          args)]
-            [args-str (string-join args-strs ", ")])
-       (cond
-         [(member func-luau (list "+" "-" "*" "/" "^"))
-          (cond
-            [(and (equal? func-luau "-") (= (length args) 1))
-             (format "-~a" (car args-strs))]
-            [(= (length args) 2)
-             (format "(~a ~a ~a)" 
-                     (car args-strs)
-                     func-luau
-                     (cadr args-strs))]
-            [(and (member func-luau (list "+" "*")) (> (length args) 2))
-             (format "(%s)" 
-                     (string-join args-strs (format " ~a " func-luau)))]
-            [else
-             (error 'ir->luau "Invalid number of arguments for arithmetic operator ~a" func-luau)])]
-         
-         [(member func-luau (list "math.sqrt" "math.floor" "math.ceil" "math.abs" 
-                                 "math.min" "math.max"))
-          (format "~a(~a)" func-luau args-str)]
-         
-         [(and (ir:ir-var-ref? func) (eq? (ir:ir-var-ref-name func) 'module))
-          (let* ([module-name (if (> (length args) 0) 
-                               (ir->luau (first args))
-                               "unnamed_module")]
-                 [module-lang (if (> (length args) 1)
-                               (ir->luau (second args))
-                               "racket/base")]
-                 [module-body (if (> (length args) 2)
-                               (map (lambda (expr) 
-                                     (let ([result (ir->luau expr)])
-                                       (if (string? result)
-                                           result
-                                           (luau-ast->string result))))
-                                    (drop args 2))
-                               '())]
-                 [module-body-str (string-join module-body "\n\n")])
-            (format "-- Module: ~a\n-- Language: ~a\n\n~a" module-name module-lang module-body-str))]
-         
-         [(and (ir:ir-var-ref? func) (eq? (ir:ir-var-ref-name func) 'define) 
-               (>= (length args) 2) (ir:ir-app? (first args)))
-          (let* ([func-app (first args)]
-                 [func-name (ir->luau (ir:ir-app-func func-app))]
-                 [func-params (map (lambda (param)
-                                    (let ([param-str (ir->luau param)])
-                                      (if (string? param-str)
-                                          param-str
-                                          (format "~a" param-str))))
-                                  (ir:ir-app-args func-app))]
-                 [func-params-str (string-join func-params ", ")]
-                 [func-body (ir->luau (second args))]
-                 [func-body-str (if (string? func-body)
-                                   func-body
-                                   (format "~a" func-body))])
-            (format "function ~a(~a)\n  return ~a\nend" func-name func-params-str func-body-str))]
-         
-         [else
-          (format "~a(~a)" func-luau args-str)]))]
+    [(ir:ir-app func args kw-args)
+     (let* ([func-str (ir->luau func)]
+            [args-str (filter string? (map ir->luau args))]
+            [args-joined (string-join* args-str ", ")]
+            [kw-str (if (null? kw-args)
+                        ""
+                        (string-join*
+                         (map (lambda (kw-pair)
+                               (format "[\"~a\"] = ~a"
+                                       (keyword->string (car kw-pair))
+                                       (ir->luau (cadr kw-pair))))
+                             kw-args)
+                         ", "))]
+            [result (if (null? kw-str)
+                        (format "~a(~a)" func-str args-joined)
+                        (format "~a(~a, {~a})" 
+                                func-str 
+                                args-joined
+                                kw-str))])
+       result)]
+    
+    [(ir:ir-define name value)
+     (cond
+       [(ir:ir-lambda? value)
+        (convert-function-def name 
+                            (ir:ir-lambda-formals value)
+                            (ir:ir-lambda-kw-formals value)
+                            (ir:ir-lambda-body value))]
+       [else
+        (let* ([name-str (luau-function-name name)]
+               [value-str (ir->luau value)])
+          (format "~a.~a = ~a" (current-module-name) name-str value-str))])]
+    
+    [(ir:ir-var-set name value)
+     (let ([name-str (luau-function-name name)]
+           [value-str (ir->luau value)])
+       (format "~a = ~a" name-str value-str))]
     
     [(ir:ir-if test then else)
-     (let* ([test-str (ir->luau test)]
-            [then-str (ir->luau then)]
-            [else-str (ir->luau else)])
-       (format "if ~a then\n~a\nelse\n~a\nend" test-str then-str else-str))]
+     (let ([test-str (ir->luau test)]
+           [then-str (ir->luau then)]
+           [else-str (ir->luau else)])
+       (format "if ~a then\n  ~a\nelse\n  ~a\nend" test-str then-str else-str))]
     
-    [_ (format "-- Unsupported node type: ~a" (object-name node))]))
+    [(ir:ir-begin exprs)
+     (let ([exprs-str (filter string? (map ir->luau exprs))])
+       (string-join* exprs-str "\n"))]
+    
+    [(ir:ir-let bindings body)
+     (let* ([binding-strs (map (lambda (b) 
+                                (format "local ~a = ~a" 
+                                        (luau-function-name (car b))
+                                        (ir->luau (cadr b))))
+                              bindings)]
+            [body-strs (filter string? (map ir->luau body))]
+            [all-strs (append binding-strs body-strs)])
+       (string-join* all-strs "\n"))]
+    
+    [(ir:ir-letrec bindings body)
+     (let* ([binding-strs (map (lambda (b) 
+                                (format "local ~a = ~a" 
+                                        (luau-function-name (car b))
+                                        (ir->luau (cadr b))))
+                              bindings)]
+            [body-strs (filter string? (map ir->luau body))]
+            [all-strs (append binding-strs body-strs)])
+       (string-join* all-strs "\n"))]
+    
+    [(ir:ir-cond clauses else-clause)
+     (let* ([clause-strs (map (lambda (c)
+                               (format "if ~a then\n  ~a\n"
+                                       (ir->luau (car c))
+                                       (ir->luau (cadr c))))
+                             clauses)]
+            [else-str (format "else\n  ~a\n" (ir->luau else-clause))]
+            [all-strs (append clause-strs (list else-str))])
+       (string-join* all-strs "\n"))]
+    
+    [(ir:ir-define-struct name fields)
+     (let* ([name-str (luau-function-name name)]
+            [field-strs (map luau-function-name fields)]
+            [constructor (format "function ~a(~a)\n  local self = {}\n  ~a\n  return self\nend"
+                               name-str
+                               (string-join* field-strs ", ")
+                               (string-join* (map (lambda (f) 
+                                                 (format "self.~a = ~a" f f))
+                                               field-strs)
+                                          "\n  "))])
+       constructor)]
+    
+    [(ir:ir-struct-ref instance index name)
+     (let ([instance-str (ir->luau instance)]
+           [name-str (luau-function-name name)])
+       (format "~a.~a" instance-str name-str))]
+    
+    [(ir:ir-match target clauses)
+     (let* ([target-str (ir->luau target)]
+            [clause-strs (map (lambda (c)
+                              (format "if ~a then\n  ~a\nend"
+                                      (ir->luau (car c))
+                                      (ir->luau (cadr c))))
+                            clauses)])
+       (string-join* (cons target-str clause-strs) "\n"))]
+    
+    [other (error 'ir->luau "Unsupported IR node: ~a" other)]))
 
-(define (luau-ast->string node)
-  (cond
-    [(luau-quasiquote? node)
-     (format "`%s" (luau-ast->string (luau-quasiquote-pattern node)))]
-    
-    [(luau-unquote? node)
-     (format "${%s}" (luau-ast->string (luau-unquote-pattern node)))]
-    
-    [(string? node) node]
-    
-    [else (format "~a" node)]))
+(define (luau-ast->string ast)
+  (if (string? ast)
+      ast
+      (error 'luau-ast->string "Expected string, got: ~a" ast)))
 
 (define (luau-node-type node)
   (cond

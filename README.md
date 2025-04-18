@@ -1,36 +1,128 @@
 # Apollo: A Racket to Luau Compiler
 
-[![Build Status](https://github.com/yourusername/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/apollo/actions/workflows/ci.yml) <!-- Update with actual repo URL -->
+[![Build Status](https://github.com/yourusername/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/apollo/actions/workflows/ci.yml)
 
-Apollo compiles Racket code to Luau for use in Roblox development.
+Apollo is a powerful compiler that transforms Racket code into Luau, enabling Roblox game development with the elegance and power of Racket's functional programming paradigm.
+
+## Features
+
+- **Full Racket Language Support**: Compile most Racket language features to Luau
+- **Optimized Code Generation**: Produces efficient Luau code with caching and fast paths
+- **Module System**: Support for Racket's module system with proper namespace handling
+- **CTFE (Compile-Time Function Evaluation)**: Evaluate expressions at compile time
+- **Pattern Matching**: Convert Racket's pattern matching to efficient Luau code
+- **Type Safety**: Maintain type safety through the compilation process
+
+## Installation
+
+### Prerequisites
+
+- Racket 8.0 or later
+- Roblox Studio (for testing compiled code)
+
+### Installation Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/apollo.git
+   cd apollo
+   ```
+
+2. Install dependencies:
+   ```bash
+   raco pkg install
+   ```
+
+3. Build the compiler:
+   ```bash
+   raco make src/apollo/main.rkt
+   ```
+
+## Quick Start
+
+1. Create a new Racket file (e.g., `game.rkt`):
+   ```racket
+   #lang racket/base
+   
+   (define (create-player name)
+     (let ([player (game:create-player name)])
+       (set-player-speed! player 16)
+       player))
+   
+   (define (main)
+     (let ([player (create-player "Hero")])
+       (displayln "Game started!")))
+   ```
+
+2. Compile to Luau:
+   ```bash
+   raco apollo game.rkt -o game.luau
+   ```
+
+3. Use in Roblox Studio:
+   - Create a new Script in Roblox Studio
+   - Copy the contents of `game.luau` into the script
+   - Run the game to test
 
 ## Documentation
 
-**The primary documentation is hosted online (link TBD) or can be built locally using Hugo.**
+### Online Documentation
 
--   **[Online Docs](https://yourusername.github.io/apollo/)** (Replace with actual URL when deployed)
--   **Local Build:**
-    1.  Install [Hugo](https://gohugo.io/installation/).
-    2.  Run `hugo server` inside the `docs-hugo` directory.
-    3.  Open your browser to `http://localhost:1313`.
+Visit our [documentation website](https://yourusername.github.io/apollo/) for detailed guides and API references.
 
-**API Reference:**
+### Building Documentation Locally
 
-Generated Racket API documentation can be built using:
+1. Install [Hugo](https://gohugo.io/installation/)
+2. Run the documentation server:
+   ```bash
+   cd docs-hugo
+   hugo server
+   ```
+3. Open `http://localhost:1313` in your browser
 
+### API Reference
+
+Generate local API documentation:
 ```bash
 raco docs apollo
 ```
 
-## Quick Start
+## Project Structure
 
-1.  **Install:** See the [[Installation Guide]](docs-hugo/content/guide/installation.md) (link for source browsing).
-2.  **Usage:** See the [[Usage Guide]](docs-hugo/content/guide/usage.md) (link for source browsing).
+```
+apollo/
+├── src/
+│   └── apollo/
+│       ├── compiler/     # Core compiler components
+│       │   ├── ir.rkt    # Intermediate Representation
+│       │   ├── parser.rkt # Racket parser
+│       │   └── codegen.rkt # Luau code generator
+│       └── main.rkt      # Entry point
+├── tests/               # Test suite
+├── examples/           # Example projects
+└── docs-hugo/         # Documentation
+```
 
 ## Contributing
 
-Please see [[CONTRIBUTING.md]](CONTRIBUTING.md) (link for source browsing).
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+- Setting up a development environment
+- Submitting pull requests
+- Reporting issues
+- Code style guidelines
 
 ## License
 
-MIT License (see [[LICENSE]](LICENSE) file). 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- The Racket team for creating such a powerful language
+- The Roblox team for Luau and the Roblox platform
+- All contributors who have helped make Apollo better
+
+## Support
+
+- [GitHub Issues](https://github.com/yourusername/apollo/issues) for bug reports and feature requests
+- [Discord Server](https://discord.gg/your-invite) for community support
+- [Documentation](https://yourusername.github.io/apollo/) for detailed guides 
