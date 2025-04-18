@@ -11,7 +11,8 @@
          racket/match
          racket/path
          apollo/compiler/ir-types
-         apollo/compiler/ctfe)
+         apollo/compiler/ctfe
+         apollo/compiler/ir)
 
 ;; Use package requires
 (require apollo/compiler/parser

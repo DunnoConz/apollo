@@ -13,33 +13,58 @@
 (struct luau-quasiquote (pattern) #:prefab)
 (struct luau-unquote (pattern) #:prefab)
 
-;; String caching for common values
-(define string-cache (make-hash))
-(define (cache-string key value)
-  (hash-set! string-cache key value)
-  value)
+;; Data-oriented structures for code generation
+(struct codegen-state (strings functions modules patterns) #:mutable)
+(struct string-batch (values indices) #:mutable)
+(struct function-batch (names params bodies) #:mutable)
+(struct module-batch (names paths bodies) #:mutable)
+(struct pattern-batch (values types) #:mutable)
 
-(define (get-cached-string key)
-  (hash-ref string-cache key #f))
+;; Initialize code generation state
+(define (make-codegen-state)
+  (codegen-state (string-batch '() (make-hash))
+                 (function-batch '() '() '())
+                 (module-batch '() '() '())
+                 (pattern-batch '() '())))
 
-;; Symbol table for string interning
-(define symbol-table (make-hash))
-(define (intern-string str)
-  (or (hash-ref symbol-table str #f)
-      (let ([interned (string->immutable-string str)])
-        (hash-set! symbol-table str interned)
-        interned)))
+;; String interning with cache locality
+(define (intern-string str state)
+  (let ([strings (codegen-state-strings state)]
+        [values (string-batch-values strings)]
+        [indices (string-batch-indices strings)])
+    (or (hash-ref indices str #f)
+        (let ([idx (length values)])
+          (set-string-batch-values! strings (cons str values))
+          (hash-set! indices str idx)
+          idx))))
 
-;; Optimized string operations
-(define (string-join* strs sep)
-  (if (null? strs)
-      ""
-      (let loop ([acc (car strs)]
-                 [rest (cdr strs)])
-        (if (null? rest)
-            acc
-            (loop (string-append acc sep (car rest))
-                  (cdr rest))))))
+;; Batch string operations
+(define (batch-string-join strs sep state)
+  (let ([strings (codegen-state-strings state)]
+        [values (string-batch-values strings)])
+    (if (null? strs)
+        ""
+        (let loop ([acc (list-ref values (intern-string (car strs) state))]
+                   [rest (cdr strs)])
+          (if (null? rest)
+              acc
+              (let ([next (list-ref values (intern-string (car rest) state))])
+                (loop (string-append acc sep next)
+                      (cdr rest))))))))
+
+;; Helper function to get string batch indices
+(define (string-batch-indices strings)
+  (for/hash ([str strings]
+             [i (in-naturals)])
+    (values str i)))
+
+;; Optimized function name conversion with batching
+(define (batch-function-name name state)
+  (let ([indices (string-batch-indices (codegen-state-strings state))])
+    (or (hash-ref indices (symbol->string name) #f)
+        (let ([converted (regexp-replace* #rx"-" (symbol->string name) "_")])
+          (intern-string converted state)
+          converted))))
 
 ;; Optimized string escaping with caching
 (define escape-cache (make-hash))
@@ -49,75 +74,26 @@
         (hash-set! escape-cache str escaped)
         escaped)))
 
-;; Optimized function name conversion
-(define fn-name-cache (make-hash))
-(define (luau-function-name name)
-  (or (hash-ref fn-name-cache name #f)
-      (let ([converted (regexp-replace* #rx"-" (symbol->string name) "_")])
-        (hash-set! fn-name-cache name converted)
-        converted)))
-
 ;; Current module name for context
 (define current-module-name (make-parameter ""))
 
-;; Convert a function definition to Luau with proper formatting
-(define (convert-function-def name formals kw-formals body)
-  (let* ([func-name (luau-function-name name)]
-         [param-names (map luau-function-name formals)]
-         [params-str (string-join* param-names ", ")]
-         [body-exprs (filter string? (map ir->luau body))]
-         [kw-handling (if (null? kw-formals)
-                         ""
-                         (string-append
-                          "\n    local args = {...}\n"
-                          (string-join*
-                           (map (lambda (kw-pair)
-                                 (format "    local ~a = args[\"~a\"] or ~a"
-                                         (luau-function-name (keyword->string (car kw-pair)))
-                                         (keyword->string (car kw-pair))
-                                         (ir->luau (cadr kw-pair))))
-                               kw-formals)
-                           "\n")
-                          "\n"))]
-         [body-str (string-join* body-exprs "\n    ")])
-    (format "function ~a.~a(~a)~a    ~a\nend\n" 
-            (current-module-name)
-            func-name
-            params-str 
-            kw-handling
-            body-str)))
-
-;; Convert IR values to strings with caching
-(define (ir-value->string value)
-  (or (get-cached-string value)
-      (let ([result
-             (match value
-               [(? number?) (number->string value)]
-               [(? string?) (format "\"~a\"" (escape-string value))]
-               [(? boolean?) (if value "true" "false")]
-               ['null "nil"]
-               [(? symbol?) (luau-function-name value)]
-               [_ (error (format "Unsupported value type: ~a" value))])])
-        (cache-string value result))))
-
-;; Convert IR to Luau code
-(define (ir->luau node)
+;; Convert IR to Luau code with DOD optimization
+(define (ir->luau node [state (make-codegen-state)])
   (match node
     [(ir:ir-ctfe expr)
-     ;; Evaluate CTFE expression and convert result to Luau
      (let ([result (ctfe-eval expr (init-ctfe-env))])
-       (ir-value->string result))]
+       (ir-value->string result state))]
     
     [(ir:ir-program modules)
-     (let ([module-code (filter string? (map ir->luau modules))])
-       (string-join module-code "\n\n"))]
+     (let ([module-code (filter string? (map (lambda (m) (ir->luau m state)) modules))])
+       (batch-string-join module-code "\n\n" state))]
     
     [(ir:ir-module name path body)
-     (let* ([module-name (luau-function-name name)]
+     (let* ([module-name (batch-function-name name state)]
             [module-path (if path (path->string path) module-name)])
        (parameterize ([current-module-name module-name])
-         (let* ([body-code (filter string? (map ir->luau body))]
-                [body-str (string-join body-code "\n\n")])
+         (let* ([body-code (filter string? (map (lambda (b) (ir->luau b state)) body))]
+                [body-str (batch-string-join body-code "\n\n" state)])
            (format "local ~a = {}\n\n-- Module: ~a\n~a\n\nreturn ~a" 
                    module-name
                    module-path 
@@ -125,10 +101,10 @@
                    module-name))))]
     
     [(ir:ir-literal value)
-     (ir-value->string value)]
+     (ir-value->string value state)]
     
     [(ir:ir-var-ref name)
-     (let ([name-str (luau-function-name name)])
+     (let ([name-str (batch-function-name name state)])
        (cond
          [(eq? name '+) "+"]
          [(eq? name '-) "-"]
@@ -150,41 +126,43 @@
          [else name-str]))]
     
     [(ir:ir-lambda formals kw-formals body)
-     (let* ([param-names (map luau-function-name formals)]
-            [params-str (string-join* param-names ", ")]
-            [body-exprs (filter string? (map ir->luau body))]
+     (let* ([param-names (map (lambda (f) (batch-function-name f state)) formals)]
+            [params-str (batch-string-join param-names ", " state)]
+            [body-exprs (filter string? (map (lambda (b) (ir->luau b state)) body))]
             [kw-handling (if (null? kw-formals)
                            ""
                            (string-append
                             "\n  local args = {...}\n"
-                            (string-join*
+                            (batch-string-join
                              (map (lambda (kw-pair)
                                    (format "  local ~a = args[\"~a\"] or ~a"
-                                           (luau-function-name (keyword->string (car kw-pair)))
+                                           (batch-function-name (keyword->string (car kw-pair)) state)
                                            (keyword->string (car kw-pair))
-                                           (ir->luau (cadr kw-pair))))
+                                           (ir->luau (cadr kw-pair) state)))
                                  kw-formals)
-                             "\n")
+                             "\n"
+                             state)
                             "\n"))]
-            [body-str (string-join* body-exprs "\n  ")])
+            [body-str (batch-string-join body-exprs "\n  " state)])
        (format "function(~a)~a  ~a\nend" 
                params-str 
                kw-handling
                body-str))]
     
     [(ir:ir-app func args kw-args)
-     (let* ([func-str (ir->luau func)]
-            [args-str (filter string? (map ir->luau args))]
-            [args-joined (string-join* args-str ", ")]
+     (let* ([func-str (ir->luau func state)]
+            [args-str (filter string? (map (lambda (a) (ir->luau a state)) args))]
+            [args-joined (batch-string-join args-str ", " state)]
             [kw-str (if (null? kw-args)
                         ""
-                        (string-join*
+                        (batch-string-join
                          (map (lambda (kw-pair)
                                (format "[\"~a\"] = ~a"
                                        (keyword->string (car kw-pair))
-                                       (ir->luau (cadr kw-pair))))
+                                       (ir->luau (cadr kw-pair) state)))
                              kw-args)
-                         ", "))]
+                         ", "
+                         state))]
             [result (if (null? kw-str)
                         (format "~a(~a)" func-str args-joined)
                         (format "~a(~a, {~a})" 
@@ -199,84 +177,104 @@
         (convert-function-def name 
                             (ir:ir-lambda-formals value)
                             (ir:ir-lambda-kw-formals value)
-                            (ir:ir-lambda-body value))]
+                            (ir:ir-lambda-body value)
+                            state)]
        [else
-        (let* ([name-str (luau-function-name name)]
-               [value-str (ir->luau value)])
+        (let* ([name-str (batch-function-name name state)]
+               [value-str (ir->luau value state)])
           (format "~a.~a = ~a" (current-module-name) name-str value-str))])]
     
     [(ir:ir-var-set name value)
-     (let ([name-str (luau-function-name name)]
-           [value-str (ir->luau value)])
+     (let ([name-str (batch-function-name name state)]
+           [value-str (ir->luau value state)])
        (format "~a = ~a" name-str value-str))]
     
     [(ir:ir-if test then else)
-     (let ([test-str (ir->luau test)]
-           [then-str (ir->luau then)]
-           [else-str (ir->luau else)])
+     (let ([test-str (ir->luau test state)]
+           [then-str (ir->luau then state)]
+           [else-str (ir->luau else state)])
        (format "if ~a then\n  ~a\nelse\n  ~a\nend" test-str then-str else-str))]
     
     [(ir:ir-begin exprs)
-     (let ([exprs-str (filter string? (map ir->luau exprs))])
-       (string-join* exprs-str "\n"))]
+     (let ([exprs-str (filter string? (map (lambda (e) (ir->luau e state)) exprs))])
+       (batch-string-join exprs-str "\n" state))]
     
     [(ir:ir-let bindings body)
      (let* ([binding-strs (map (lambda (b) 
                                 (format "local ~a = ~a" 
-                                        (luau-function-name (car b))
-                                        (ir->luau (cadr b))))
+                                        (batch-function-name (car b) state)
+                                        (ir->luau (cadr b) state)))
                               bindings)]
-            [body-strs (filter string? (map ir->luau body))]
+            [body-strs (filter string? (map (lambda (b) (ir->luau b state)) body))]
             [all-strs (append binding-strs body-strs)])
-       (string-join* all-strs "\n"))]
+       (batch-string-join all-strs "\n" state))]
     
     [(ir:ir-letrec bindings body)
      (let* ([binding-strs (map (lambda (b) 
                                 (format "local ~a = ~a" 
-                                        (luau-function-name (car b))
-                                        (ir->luau (cadr b))))
+                                        (batch-function-name (car b) state)
+                                        (ir->luau (cadr b) state)))
                               bindings)]
-            [body-strs (filter string? (map ir->luau body))]
+            [body-strs (filter string? (map (lambda (b) (ir->luau b state)) body))]
             [all-strs (append binding-strs body-strs)])
-       (string-join* all-strs "\n"))]
+       (batch-string-join all-strs "\n" state))]
     
     [(ir:ir-cond clauses else-clause)
      (let* ([clause-strs (map (lambda (c)
                                (format "if ~a then\n  ~a\n"
-                                       (ir->luau (car c))
-                                       (ir->luau (cadr c))))
+                                       (ir->luau (car c) state)
+                                       (ir->luau (cadr c) state)))
                              clauses)]
-            [else-str (format "else\n  ~a\n" (ir->luau else-clause))]
+            [else-str (format "else\n  ~a\n" (ir->luau else-clause state))]
             [all-strs (append clause-strs (list else-str))])
-       (string-join* all-strs "\n"))]
-    
-    [(ir:ir-define-struct name fields)
-     (let* ([name-str (luau-function-name name)]
-            [field-strs (map luau-function-name fields)]
-            [constructor (format "function ~a(~a)\n  local self = {}\n  ~a\n  return self\nend"
-                               name-str
-                               (string-join* field-strs ", ")
-                               (string-join* (map (lambda (f) 
-                                                 (format "self.~a = ~a" f f))
-                                               field-strs)
-                                          "\n  "))])
-       constructor)]
-    
-    [(ir:ir-struct-ref instance index name)
-     (let ([instance-str (ir->luau instance)]
-           [name-str (luau-function-name name)])
-       (format "~a.~a" instance-str name-str))]
-    
-    [(ir:ir-match target clauses)
-     (let* ([target-str (ir->luau target)]
-            [clause-strs (map (lambda (c)
-                              (format "if ~a then\n  ~a\nend"
-                                      (ir->luau (car c))
-                                      (ir->luau (cadr c))))
-                            clauses)])
-       (string-join* (cons target-str clause-strs) "\n"))]
-    
-    [other (error 'ir->luau "Unsupported IR node: ~a" other)]))
+       (batch-string-join all-strs "" state))]))
+
+;; Convert IR values to strings with DOD optimization
+(define (ir-value->string value state)
+  (let ([strings (codegen-state-strings state)]
+        [values (string-batch-values strings)]
+        [indices (string-batch-indices strings)])
+    (or (hash-ref indices value #f)
+        (let ([result
+               (match value
+                 [(? number?) (number->string value)]
+                 [(? string?) (format "\"~a\"" (escape-string value))]
+                 [(? boolean?) (if value "true" "false")]
+                 ['null "nil"]
+                 [(? symbol?) (batch-function-name value state)]
+                 [_ (error (format "Unsupported value type: ~a" value))])])
+          (let ([idx (length values)])
+            (set-string-batch-values! strings (cons result values))
+            (hash-set! indices value idx)
+            result)))))
+
+;; Convert a function definition to Luau with proper formatting
+(define (convert-function-def name formals kw-formals body state)
+  (let* ([func-name (batch-function-name name state)]
+         [param-names (map (lambda (f) (batch-function-name f state)) formals)]
+         [params-str (batch-string-join param-names ", " state)]
+         [body-exprs (filter string? (map (lambda (b) (ir->luau b state)) body))]
+         [kw-handling (if (null? kw-formals)
+                         ""
+                         (string-append
+                          "\n    local args = {...}\n"
+                          (batch-string-join
+                           (map (lambda (kw-pair)
+                                 (format "    local ~a = args[\"~a\"] or ~a"
+                                         (batch-function-name (keyword->string (car kw-pair)) state)
+                                         (keyword->string (car kw-pair))
+                                         (ir->luau (cadr kw-pair) state)))
+                               kw-formals)
+                           "\n"
+                           state)
+                          "\n"))]
+         [body-str (batch-string-join body-exprs "\n    " state)])
+    (format "function ~a.~a(~a)~a    ~a\nend\n" 
+            (current-module-name)
+            func-name
+            params-str 
+            kw-handling
+            body-str)))
 
 (define (luau-ast->string ast)
   (if (string? ast)

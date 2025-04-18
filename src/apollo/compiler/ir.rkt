@@ -138,12 +138,18 @@
 
 ;; Main conversion functions
 (define (convert-to-ir stx)
+  (unless (syntax? stx)
+    (error 'convert-to-ir "Expected syntax object, got: ~a" stx))
   (ir-program (list (convert-module-to-ir stx))))
 
 (define (convert-module-to-ir stx)
-  (ir-module (syntax->datum (syntax-property stx 'module-name))
-             (get-module-path stx)
-             (map convert-expr-to-ir (syntax->list stx))))
+  (unless (syntax? stx)
+    (error 'convert-module-to-ir "Expected syntax object, got: ~a" stx))
+  (let ([module-name (or (syntax-property stx 'module-name) 'anonymous)]
+        [module-path (or (syntax-source stx) (current-module-path))])
+    (ir-module module-name
+               module-path
+               (map convert-expr-to-ir (syntax->list stx)))))
 
 ;; Optimized pattern matching
 (define (match-pattern pat)
@@ -168,12 +174,11 @@
 
 ;; Optimized expression conversion with caching
 (define (convert-expr-to-ir expr)
-  (or (get-cached-expr expr)
-      (cache-expr expr
-        (cond
-          [(fast-literal? expr) (convert-literal-to-ir expr)]
-          [(fast-expr? expr) (match-pattern expr)]
-          [else (error "Unsupported expression type: ~a" expr)]))))
+  (cond
+    [(syntax? expr) (convert-expr-to-ir (syntax->datum expr))]
+    [(fast-literal? expr) (convert-literal-to-ir expr)]
+    [(fast-expr? expr) (match-pattern expr)]
+    [else (error "Unsupported expression type: ~a" expr)]))
 
 ;; Optimized literal conversion with caching
 (define (convert-literal-to-ir lit)

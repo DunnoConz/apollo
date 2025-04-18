@@ -6,13 +6,14 @@
          racket/port
          racket/string
          racket/path
+         syntax/parse
          (prefix-in ir: "./ir.rkt"))
 
 (provide parse-program parse-expr parse-racket-string parse-pattern)
 
 ;; Module dependency tracking
 (define module-deps (make-hash))
-(define current-module-path #f)
+(define current-module-path (make-parameter #f))
 
 (define (add-module-dep! from to)
   (hash-set! module-deps from (cons to (hash-ref module-deps from '()))))
@@ -20,7 +21,7 @@
 (define (get-module-deps path)
   (hash-ref module-deps path '()))
 
-(define (resolve-module-path path [relative-to current-module-path])
+(define (resolve-module-path path [relative-to (current-module-path)])
   (cond
     [(not (or (string? path) (path? path)))
      (error 'resolve-module-path "Invalid path type: ~a" path)]
@@ -83,7 +84,7 @@
       (lambda ()
         (let ([port (current-input-port)])
           (let loop ([exprs '()])
-            (let ([expr (read port)])
+            (let ([expr (read-syntax source-name port)])
               (if (eof-object? expr)
                   (reverse exprs)
                   (loop (cons expr exprs))))))))))
@@ -92,17 +93,21 @@
   (parameterize ([current-module-path source-path])
     (if (string? code-input)
         ;; Parse from string input
-        (let ([exprs (parse-racket-string code-input)])
+        (let ([exprs (parse-racket-string code-input source-path)])
           (map parse-expr exprs))
         ;; Parse from s-expression
         (match code-input
-          [`(module ,_ racket/base ,body ...)
-           (map parse-expr body)]
-          [other
-           (list (parse-expr other))]))))
+          [`(module ,name racket/base ,body ...)
+           (let ([stx (datum->syntax #f `(module ,name racket/base ,@body))])
+             (syntax-property stx 'module-name name)
+             (syntax-source stx source-path)
+             (map parse-expr (syntax->list stx)))]
+          [other (error "Invalid program input: ~a" other)]))))
 
 (define (parse-expr expr)
   (cond
+    [(syntax? expr) (parse-expr (syntax->datum expr))]
+    
     ;; Literals
     [(number? expr) (ir:ir-literal expr)]
     [(string? expr) (ir:ir-literal expr)]
@@ -196,6 +201,7 @@
 
 (define (parse-pattern pat)
   (cond
+    [(syntax? pat) (parse-pattern (syntax->datum pat))]
     [(symbol? pat) (ir:ir-pat-var pat)]
     [(null? pat) (ir:ir-pat-literal '())]
     [(or (number? pat) (string? pat) (boolean? pat))
