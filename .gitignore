@@ -54,3 +54,4 @@ tmp/
 
 # Keep these files
 !.gitkeep
+.vitepress
