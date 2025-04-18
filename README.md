@@ -1,10 +1,14 @@
 # Apollo: A Racket to Luau Compiler
 
+<<<<<<< HEAD
 <p align="center">
   <img src="the_logo.jpg" width="200" alt="Apollo Logo">
 </p>
 
 [![Build Status](https://github.com/yourusername/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/apollo/actions/workflows/ci.yml)
+=======
+[![Build Status](https://github.com/dunnoconz/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/dunnoconz/apollo/actions/workflows/ci.yml)
+>>>>>>> 3982852 (Update README.md)
 
 Apollo is a powerful compiler that transforms Racket code into Luau, enabling Roblox game development with the elegance and power of Racket's functional programming paradigm.
 
