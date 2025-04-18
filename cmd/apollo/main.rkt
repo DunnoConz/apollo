@@ -9,10 +9,10 @@
          racket/path
          racket/system) ;; Added for filesystem-change-evt
 
-;; Use relative paths
-(require "../../src/apollo/compiler/parser.rkt"
-         "../../src/apollo/compiler/codegen.rkt"
-         (submod "../../src/apollo/compiler/ir.rkt" ir))
+;; Use package requires instead of relative paths
+(require apollo/compiler/parser
+         apollo/compiler/codegen
+         (submod apollo/compiler/ir ir))
 
 ;; Optional import of Rojo integration if available
 (define use-rojo? #f)

@@ -33,8 +33,7 @@
     "compiler"
     "rojo"
     "std"
-    "ecs"
-    "src"))
+    "ecs"))
 
 ;; Define the collection hierarchy
 (define collection-hierarchy
@@ -43,5 +42,4 @@
     ("compiler" "compiler")
     ("rojo" "rojo")
     ("std" "std")
-    ("ecs" "ecs")
-    ("src" "src"))) 
+    ("ecs" "ecs"))) 
