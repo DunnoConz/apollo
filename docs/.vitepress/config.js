@@ -56,7 +56,8 @@ export default defineConfig({
           { text: 'Introduction', link: '/explanation/introduction' },
           { text: 'Architecture', link: '/explanation/architecture' },
           { text: 'Type System', link: '/explanation/type-system' },
-          { text: 'Compilation Process', link: '/explanation/compilation' }
+          { text: 'Compilation Process', link: '/explanation/compilation' },
+          { text: 'Design Principles', link: '/explanation/design-principles' }
         ]
       },
       {

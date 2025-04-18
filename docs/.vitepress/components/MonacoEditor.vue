@@ -6,7 +6,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { loader } from '@monaco-editor/loader'
+import * as monaco from 'monaco-editor'
 
 const props = defineProps({
   modelValue: {
@@ -15,7 +15,7 @@ const props = defineProps({
   },
   language: {
     type: String,
-    default: 'javascript'
+    default: 'racket'
   },
   theme: {
     type: String,
@@ -27,111 +27,53 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'editorDidMount'])
+const emit = defineEmits(['update:modelValue', 'editor-mounted'])
 
 const editorContainer = ref(null)
 let editor = null
-let monacoInstance = null
 
-onMounted(async () => {
-  monacoInstance = await loader.init()
-  
-  // Only register Racket language if it hasn't been registered yet
-  if (!monacoInstance.languages.getLanguages().some(lang => lang.id === 'racket')) {
-    monacoInstance.languages.register({ id: 'racket' })
-    
-    // Define Racket syntax highlighting
-    monacoInstance.languages.setMonarchTokensProvider('racket', {
-      defaultToken: '',
-      tokenPostfix: '.rkt',
-      
-      brackets: [
-        { open: '(', close: ')', token: 'delimiter.parenthesis' },
-        { open: '[', close: ']', token: 'delimiter.square' },
-        { open: '{', close: '}', token: 'delimiter.curly' }
-      ],
+// Register Racket language if not already registered
+if (!monaco.languages.getLanguages().some(lang => lang.id === 'racket')) {
+  monaco.languages.register({ id: 'racket' })
+  monaco.languages.setMonarchTokensProvider('racket', {
+    defaultToken: 'invalid',
+    tokenizer: {
+      root: [
+        [/\(/, { token: 'delimiter.parenthesis.open' }],
+        [/\)/, { token: 'delimiter.parenthesis.close' }],
+        [/\[/, { token: 'delimiter.square.open' }],
+        [/\]/, { token: 'delimiter.square.close' }],
+        [/#[tf]/, 'constant.boolean'],
+        [/#\\\w+/, 'constant.character'],
+        [/#\d+/, 'constant.numeric'],
+        [/"[^"]*"/, 'string'],
+        [/'[^']*'/, 'string'],
+        [/\d+/, 'constant.numeric'],
+        [/[a-zA-Z_][a-zA-Z0-9_\-!?]*/, 'identifier'],
+        [/[+\-*/=<>!&|]/, 'operator'],
+        [/\s+/, 'white']
+      ]
+    }
+  })
+}
 
-      keywords: [
-        'define', 'lambda', 'let', 'let*', 'letrec', 'if', 'cond', 'case',
-        'and', 'or', 'begin', 'do', 'delay', 'force', 'promise',
-        'quasiquote', 'unquote', 'unquote-splicing',
-        'quote', 'syntax', 'syntax-case', 'syntax-rules',
-        'set!', 'values', 'call-with-values',
-        'dynamic-wind', 'parameterize', 'guard', 'raise',
-        'with-handlers', 'call/cc', 'call-with-current-continuation',
-        'error', 'display', 'newline', 'read', 'write',
-        'load', 'require', 'provide', 'module', 'submod',
-        'struct', 'match', 'match-let', 'match-let*', 'match-define',
-        'for', 'for/list', 'for/vector', 'for/hash', 'for/hasheq',
-        'for/and', 'for/or', 'for/first', 'for/last', 'for/fold',
-        'for*/list', 'for*/vector', 'for*/hash', 'for*/hasheq',
-        'for*/and', 'for*/or', 'for*/first', 'for*/last', 'for*/fold'
-      ],
-
-      operators: [
-        '+', '-', '*', '/', '=', '<', '>', '<=', '>=', 'eq?', 'eqv?', 'equal?',
-        'not', 'null?', 'pair?', 'list?', 'vector?', 'string?', 'symbol?',
-        'number?', 'boolean?', 'procedure?', 'char?', 'port?', 'eof-object?',
-        'cons', 'car', 'cdr', 'caar', 'cadr', 'cdar', 'cddr',
-        'list', 'list*', 'append', 'reverse', 'length',
-        'map', 'filter', 'foldl', 'foldr', 'for-each',
-        'apply', 'call-with-current-continuation', 'call/cc'
-      ],
-
-      symbols: /[=><!~?:&|+\-*\/\^%]+/,
-      escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
-
-      tokenizer: {
-        root: [
-          [/\s+/, 'white'],
-          [/(\(|\)|\[|\]|\{|\})/, '@brackets'],
-          [/(#lang\s+)([a-zA-Z0-9\-]+)/, ['keyword', 'type.identifier']],
-          [/(#;|#\|)/, 'comment.block'],
-          [/(;.*$)/, 'comment.line'],
-          [/(#t|#f)/, 'constant.boolean'],
-          [/(#\\[a-zA-Z]+)/, 'constant.character'],
-          [/(#x[0-9a-fA-F]+|#b[01]+|#o[0-7]+|\d+\.\d+|\d+)/, 'constant.numeric'],
-          [/(#[0-9]+=)/, 'constant.other'],
-          [/(#[0-9]+#)/, 'constant.other'],
-          [/(['`])(\()/, ['operator', '@brackets']],
-          [/(['`])([^'`\s\(\)\[\]\{\}]+)/, ['operator', 'string']],
-          [/(['`])(\s)/, ['operator', 'white']],
-          [/(,@)/, 'operator'],
-          [/(,)/, 'operator'],
-          [/(['`])/, 'operator'],
-          [/[a-zA-Z_][a-zA-Z0-9_\-!?]*/, {
-            cases: {
-              '@keywords': 'keyword',
-              '@operators': 'operator',
-              '@default': 'identifier'
-            }
-          }],
-          [/"([^"\\]|\\.)*$/, 'string.invalid'],
-          [/"/, 'string', '@string']
-        ],
-
-        string: [
-          [/[^\\"]+/, 'string'],
-          [/@escapes/, 'string.escape'],
-          [/\\./, 'string.escape.invalid'],
-          [/"/, 'string', '@pop']
-        ]
-      }
-    })
-  }
-
-  editor = monacoInstance.editor.create(editorContainer.value, {
+onMounted(() => {
+  editor = monaco.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: props.language,
     theme: props.theme,
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
     ...props.options
   })
 
   editor.onDidChangeModelContent(() => {
-    emit('update:modelValue', editor.getValue())
+    const value = editor.getValue()
+    emit('update:modelValue', value)
   })
 
-  emit('editorDidMount', editor)
+  emit('editor-mounted', editor)
 })
 
 onBeforeUnmount(() => {
@@ -142,23 +84,19 @@ onBeforeUnmount(() => {
 
 watch(() => props.modelValue, (newValue) => {
   if (editor && newValue !== editor.getValue()) {
-    const currentPosition = editor.getPosition()
     editor.setValue(newValue)
-    if (currentPosition) {
-      editor.setPosition(currentPosition)
-    }
   }
 })
 
-watch(() => props.language, (newValue) => {
-  if (editor && monacoInstance) {
-    monacoInstance.editor.setModelLanguage(editor.getModel(), newValue)
+watch(() => props.language, (newLanguage) => {
+  if (editor) {
+    monaco.editor.setModelLanguage(editor.getModel(), newLanguage)
   }
 })
 
-watch(() => props.theme, (newValue) => {
-  if (editor && monacoInstance) {
-    monacoInstance.editor.setTheme(newValue)
+watch(() => props.theme, (newTheme) => {
+  if (editor) {
+    monaco.editor.setTheme(newTheme)
   }
 })
 </script>
@@ -166,7 +104,8 @@ watch(() => props.theme, (newValue) => {
 <style scoped>
 .monaco-editor {
   width: 100%;
-  height: 100%;
-  min-height: 300px;
+  height: 300px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 </style> 
