@@ -16,10 +16,13 @@
 (define pkg-authors '(yourusername))
 
 ;; Define the main collection paths
-(define collection-search-dirs '("."))
+(define collection-search-dirs '("src"))
 (define compile-collection-zos #t)
-(define compile-collection-paths '("."))
+(define compile-collection-paths '("src"))
 
 ;; Define paths to omit from compilation
 (define compile-omit-paths '("tests" "examples" "docs" "docs-hugo" "private"))
-(define test-omit-paths '("private")) 
+(define test-omit-paths '("private"))
+
+;; Define the main module
+(define main-module "src/apollo/main.rkt") 

@@ -6,7 +6,6 @@
         language="racket"
         theme="vs-dark"
         :options="editorOptions"
-        @change="handleCodeChange"
         @editorDidMount="handleEditorDidMount"
       />
     </div>
@@ -38,74 +37,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import MonacoEditor from '@monaco-editor/vue3'
-import { loader } from '@monaco-editor/loader'
-
-// Initialize Monaco
-loader.init().then(monaco => {
-  // Register Racket language
-  monaco.languages.register({ id: 'racket' })
-  
-  // Define Racket syntax highlighting
-  monaco.languages.setMonarchTokensProvider('racket', {
-    defaultToken: '',
-    tokenPostfix: '.rkt',
-    
-    brackets: [
-      { open: '(', close: ')', token: 'delimiter.parenthesis' },
-      { open: '[', close: ']', token: 'delimiter.square' },
-      { open: '{', close: '}', token: 'delimiter.curly' }
-    ],
-
-    keywords: [
-      'define', 'lambda', 'if', 'else', 'cond', 'case', 'and', 'or',
-      'let', 'let*', 'letrec', 'begin', 'do', 'delay', 'set!',
-      'quote', 'quasiquote', 'unquote', 'unquote-splicing',
-      'require', 'provide', 'module', 'struct'
-    ],
-
-    operators: [
-      '+', '-', '*', '/', '=', '<', '>', '<=', '>=', 'eq?', 'eqv?', 'equal?',
-      'not', 'and', 'or', 'cons', 'car', 'cdr', 'list', 'append', 'map', 'filter'
-    ],
-
-    symbols: /[=><!~?:&|+\-*\/\^%]+/,
-    escapes: /\\(?:[abfnrtv\\"']|x[0-9A-Fa-f]{1,4}|u[0-9A-Fa-f]{4}|U[0-9A-Fa-f]{8})/,
-
-    tokenizer: {
-      root: [
-        [/#lang\s+[a-zA-Z_][a-zA-Z0-9_]*/, 'keyword'],
-        [/[a-zA-Z_][a-zA-Z0-9_!?]*/, {
-          cases: {
-            '@keywords': 'keyword',
-            '@default': 'identifier'
-          }
-        }],
-        { include: '@whitespace' },
-        [/[()\[\]]/, '@brackets'],
-        [/@symbols/, {
-          cases: {
-            '@operators': 'operator',
-            '@default': ''
-          }
-        }],
-        [/\d+/, 'number'],
-        [/"/, 'string', '@string']
-      ],
-
-      whitespace: [
-        [/\s+/, 'white']
-      ],
-
-      string: [
-        [/[^\\"]+/, 'string'],
-        [/@escapes/, 'string.escape'],
-        [/\\./, 'string.escape.invalid'],
-        [/"/, 'string', '@pop']
-      ]
-    }
-  })
-})
+import MonacoEditor from './MonacoEditor.vue'
 
 const code = ref(`#lang racket
 
@@ -128,31 +60,18 @@ const tabs = [
 ]
 
 const editorOptions = {
-  automaticLayout: true,
   minimap: { enabled: false },
   fontSize: 14,
   lineNumbers: 'on',
   roundedSelection: false,
   scrollBeyondLastLine: false,
   readOnly: false,
-  theme: 'vs-dark',
-  tabSize: 2,
-  insertSpaces: true,
-  wordWrap: 'on',
-  folding: true,
-  lineDecorationsWidth: 0,
-  lineNumbersMinChars: 3
+  automaticLayout: true
 }
 
 const handleEditorDidMount = (editor) => {
-  // Add custom commands
-  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-    runCode()
-  })
-}
-
-const handleCodeChange = (value) => {
-  code.value = value
+  // You can access the editor instance here if needed
+  console.log('Editor mounted', editor)
 }
 
 const runCode = async () => {
