@@ -1,3 +1,5 @@
+#lang racket/base
+
 <template>
   <div ref="editorContainer" class="monaco-editor"></div>
 </template>
@@ -29,16 +31,17 @@ const emit = defineEmits(['update:modelValue', 'editorDidMount'])
 
 const editorContainer = ref(null)
 let editor = null
+let monacoInstance = null
 
 onMounted(async () => {
-  const monaco = await loader.init()
+  monacoInstance = await loader.init()
   
   // Only register Racket language if it hasn't been registered yet
-  if (!monaco.languages.getLanguages().some(lang => lang.id === 'racket')) {
-    monaco.languages.register({ id: 'racket' })
+  if (!monacoInstance.languages.getLanguages().some(lang => lang.id === 'racket')) {
+    monacoInstance.languages.register({ id: 'racket' })
     
     // Define Racket syntax highlighting
-    monaco.languages.setMonarchTokensProvider('racket', {
+    monacoInstance.languages.setMonarchTokensProvider('racket', {
       defaultToken: '',
       tokenPostfix: '.rkt',
       
@@ -117,7 +120,7 @@ onMounted(async () => {
     })
   }
 
-  editor = monaco.editor.create(editorContainer.value, {
+  editor = monacoInstance.editor.create(editorContainer.value, {
     value: props.modelValue,
     language: props.language,
     theme: props.theme,
@@ -148,14 +151,14 @@ watch(() => props.modelValue, (newValue) => {
 })
 
 watch(() => props.language, (newValue) => {
-  if (editor) {
-    monaco.editor.setModelLanguage(editor.getModel(), newValue)
+  if (editor && monacoInstance) {
+    monacoInstance.editor.setModelLanguage(editor.getModel(), newValue)
   }
 })
 
 watch(() => props.theme, (newValue) => {
-  if (editor) {
-    monaco.editor.setTheme(newValue)
+  if (editor && monacoInstance) {
+    monacoInstance.editor.setTheme(newValue)
   }
 })
 </script>

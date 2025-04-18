@@ -5,7 +5,7 @@
          racket/list  ; For last and drop-right
          racket/hash  ; For hash operations
          racket/struct-info  ; For struct type information
-         (prefix-in ir: (submod "./ir.rkt" ir))
+         "./ir-types.rkt"  ; Import all types directly
          "./types.rkt"  ; Import all types directly
          )
 
@@ -17,19 +17,19 @@
 (define (ir->luau ir-node)
   (match ir-node
     ;; Simple literals
-    [(ir:ir-literal val)
-     (luau-literal val)]
+    [(ir-literal value)
+     (luau-literal value)]
 
     ;; Variable reference
-    [(ir:ir-var-ref name)
+    [(ir-var-ref name)
      (luau-var (symbol->string name))]
 
     ;; Quasiquote pattern - just pass through
-    [(ir:ir-pat-quasiquote pattern)
+    [(ir-pat-quasiquote pattern)
      (ir->luau pattern)]
      
     ;; Unquote pattern - just pass through
-    [(ir:ir-pat-unquote pattern)
+    [(ir-pat-unquote pattern)
      (ir->luau pattern)]
 
     ;; Default handler for any other node

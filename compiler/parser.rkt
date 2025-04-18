@@ -7,9 +7,10 @@
          racket/string
          racket/path
          syntax/parse
-         (prefix-in ir: "./ir.rkt"))
+         (prefix-in ir: "./ir.rkt")
+         "ir-types.rkt")
 
-(provide parse-program parse-expr parse-racket-string parse-pattern)
+(provide parse-program parse-expr parse-racket-string parse-pattern racket-to-ir)
 
 ;; Module dependency tracking
 (define module-deps (make-hash))
@@ -219,3 +220,37 @@
      (ir:ir-pat-struct (car pat) (map parse-pattern (cdr pat)))]
     [else
      (error 'parse-pattern "Unsupported pattern: ~s" pat)]))
+
+;; Convert Racket syntax to IR
+(define (racket-to-ir stx)
+  (syntax-parse stx
+    #:literals (define lambda let let* letrec if cond case
+                and or begin do delay force promise
+                quasiquote unquote unquote-splicing
+                quote syntax syntax-case syntax-rules
+                set! values call-with-values
+                dynamic-wind parameterize guard raise
+                with-handlers call/cc call-with-current-continuation
+                error display newline read write
+                load require provide module submod
+                struct match match-let match-let* match-define
+                for for/list for/vector for/hash for/hasheq
+                for/and for/or for/first for/last for/fold
+                for*/list for*/vector for*/hash for*/hasheq
+                for*/and for*/or for*/first for*/last for*/fold)
+    
+    ;; Literals
+    [(#%datum . d) (ir-literal (syntax->datum #'d))]
+    
+    ;; Variables
+    [x:id (ir-var-ref (syntax->datum #'x))]
+    
+    ;; Applications
+    [(f . args) (ir-app (racket-to-ir #'f)
+                        (map racket-to-ir (syntax->list #'args))
+                        '())]
+    
+    ;; Default case
+    [_ (ir-literal 'placeholder)]))
+
+(provide (all-defined-out))

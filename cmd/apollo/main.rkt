@@ -3,16 +3,17 @@
 ;; This file is used as the entry point for `raco exe`
 ;; It requires the main package module and command-line processing.
 
-(require racket/file
+(require racket/cmdline
+         racket/file
+         racket/path
          racket/port
          racket/string
-         racket/path
          racket/system) ;; Added for filesystem-change-evt
 
 ;; Use package requires instead of relative paths
 (require apollo/compiler/parser
          apollo/compiler/codegen
-         (submod apollo/compiler/ir ir))
+         apollo/compiler/ir)
 
 ;; Optional import of Rojo integration if available
 (define use-rojo? #f)
