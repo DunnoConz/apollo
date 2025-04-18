@@ -7,7 +7,7 @@
          racket/string
          racket/path
          syntax/parse
-         (prefix-in ir: "./ir.rkt")
+         (prefix-in ir: (submod "./ir.rkt" ir))
          "ir-types.rkt")
 
 (provide parse-program parse-expr parse-racket-string parse-pattern racket-to-ir)
@@ -110,16 +110,16 @@
     [(syntax? expr) (parse-expr (syntax->datum expr))]
     
     ;; Literals
-    [(number? expr) (ir:ir-literal expr)]
-    [(string? expr) (ir:ir-literal expr)]
-    [(boolean? expr) (ir:ir-literal expr)]
-    [(eq? expr '#true) (ir:ir-literal #true)]
-    [(eq? expr '#false) (ir:ir-literal #false)]
-    [(null? expr) (ir:ir-literal '())]
-    [(eq? expr 'null) (ir:ir-literal 'null)]
+    [(number? expr) (ir:convert-literal-to-ir expr)]
+    [(string? expr) (ir:convert-literal-to-ir expr)]
+    [(boolean? expr) (ir:convert-literal-to-ir expr)]
+    [(eq? expr '#true) (ir:convert-literal-to-ir #true)]
+    [(eq? expr '#false) (ir:convert-literal-to-ir #false)]
+    [(null? expr) (ir:convert-literal-to-ir '())]
+    [(eq? expr 'null) (ir:convert-literal-to-ir 'null)]
     
     ;; Variables
-    [(symbol? expr) (ir:ir-var-ref expr)]
+    [(symbol? expr) (ir:convert-expr-to-ir expr)]
     
     ;; Not a simple expression, must be a list form
     [(not (pair? expr)) 
@@ -129,66 +129,64 @@
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'define-struct))
      (let ([name (cadr expr)]
            [fields (caddr expr)])
-       (ir:ir-define-struct name fields))]
+       (ir:convert-define-struct-to-ir name fields))]
     
     ;; Handle lambda expressions with keyword arguments
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'lambda))
      (let* ([formals (cadr expr)]
-            [body (cddr expr)]
-            [pos-args (filter (lambda (x) (not (keyword? x))) formals)]
-            [kw-args (filter keyword? formals)])
-       (ir:ir-lambda (append pos-args kw-args) (map parse-expr body)))]
+            [body (cddr expr)])
+       (ir:convert-lambda-to-ir formals body))]
     
     ;; Handle define expressions
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'define))
      (let ([name (cadr expr)]
            [value (caddr expr)])
-       (ir:ir-define name (parse-expr value)))]
+       (ir:convert-expr-to-ir `(define ,name ,(parse-expr value))))]
     
     ;; Handle set! expressions
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'set!))
      (let ([name (cadr expr)]
            [value (caddr expr)])
-       (ir:ir-var-set name (parse-expr value)))]
+       (ir:convert-expr-to-ir `(set! ,name ,(parse-expr value))))]
     
     ;; Handle if expressions
     [(and (list? expr) (>= (length expr) 4) (eq? (car expr) 'if))
      (let ([test (cadr expr)]
            [then (caddr expr)]
            [else (cadddr expr)])
-       (ir:ir-if (parse-expr test) (parse-expr then) (parse-expr else)))]
+       (ir:convert-if-to-ir test then else))]
     
     ;; Handle begin expressions
     [(and (list? expr) (>= (length expr) 2) (eq? (car expr) 'begin))
      (let ([body (cdr expr)])
-       (ir:ir-begin (map parse-expr body)))]
+       (ir:convert-begin-to-ir (map parse-expr body)))]
     
     ;; Handle let expressions
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'let))
      (let ([bindings (cadr expr)]
            [body (cddr expr)])
-       (ir:ir-let bindings (map parse-expr body)))]
+       (ir:convert-let-to-ir bindings (map parse-expr body)))]
     
     ;; Handle letrec expressions
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'letrec))
      (let ([bindings (cadr expr)]
            [body (cddr expr)])
-       (ir:ir-letrec bindings (map parse-expr body)))]
+       (ir:convert-letrec-to-ir bindings (map parse-expr body)))]
     
     ;; Handle cond expressions
     [(and (list? expr) (>= (length expr) 2) (eq? (car expr) 'cond))
      (let ([clauses (cdr expr)])
-       (ir:ir-cond (map (lambda (c) (list (parse-expr (car c)) (parse-expr (cadr c))))
-                       (take clauses (- (length clauses) 1)))
-                   (parse-expr (cadr (last clauses)))))]
+       (ir:convert-cond-to-ir (map (lambda (c) (list (parse-expr (car c)) (parse-expr (cadr c))))
+                                  (take clauses (- (length clauses) 1)))
+                             (parse-expr (cadr (last clauses)))))]
     
     ;; Handle match expressions
     [(and (list? expr) (>= (length expr) 3) (eq? (car expr) 'match))
      (let ([target (cadr expr)]
            [clauses (cddr expr)])
-       (ir:ir-match (parse-expr target)
-                    (map (lambda (c) (list (parse-pattern (car c)) (parse-expr (cadr c))))
-                         clauses)))]
+       (ir:convert-match-to-ir (parse-expr target)
+                              (map (lambda (c) (list (parse-pattern (car c)) (parse-expr (cadr c))))
+                                  clauses)))]
     
     ;; Handle function applications with keyword arguments
     [else
@@ -196,28 +194,28 @@
             [args (cdr expr)]
             [pos-args (filter (lambda (x) (not (keyword? x))) args)]
             [kw-args (filter keyword? args)])
-       (ir:ir-app (parse-expr func) 
-                 (append (map parse-expr pos-args)
-                        (map (lambda (kw) (ir:ir-literal kw)) kw-args))))]))
+       (ir:convert-app-to-ir (parse-expr func) 
+                            (append (map parse-expr pos-args)
+                                   (map (lambda (kw) (ir:convert-literal-to-ir kw)) kw-args))))]))
 
 (define (parse-pattern pat)
   (cond
     [(syntax? pat) (parse-pattern (syntax->datum pat))]
-    [(symbol? pat) (ir:ir-pat-var pat)]
-    [(null? pat) (ir:ir-pat-literal '())]
+    [(symbol? pat) (ir:convert-pattern-to-ir `(var ,pat))]
+    [(null? pat) (ir:convert-pattern-to-ir `(literal ()))]
     [(or (number? pat) (string? pat) (boolean? pat))
-     (ir:ir-pat-literal pat)]
+     (ir:convert-pattern-to-ir `(literal ,pat))]
     [(and (list? pat) (eq? (car pat) '_))
-     (ir:ir-pat-wildcard)]
+     (ir:convert-pattern-to-ir '_)]
     [(and (list? pat) (eq? (car pat) 'list))
      (let ([elements (cdr pat)])
-       (ir:ir-pat-list (map parse-pattern elements) #f))]
+       (ir:convert-pattern-to-ir `(list ,(map parse-pattern elements) #f)))]
     [(and (list? pat) (eq? (car pat) 'list*))
      (let ([elements (cdr pat)])
-       (ir:ir-pat-list (map parse-pattern (take elements (- (length elements) 1)))
-                       (parse-pattern (last elements))))]
+       (ir:convert-pattern-to-ir `(list ,(map parse-pattern (take elements (- (length elements) 1)))
+                                      ,(parse-pattern (last elements)))))]
     [(and (list? pat) (symbol? (car pat)))
-     (ir:ir-pat-struct (car pat) (map parse-pattern (cdr pat)))]
+     (ir:convert-pattern-to-ir `(struct ,(car pat) ,(map parse-pattern (cdr pat))))]
     [else
      (error 'parse-pattern "Unsupported pattern: ~s" pat)]))
 
@@ -240,17 +238,56 @@
                 for*/and for*/or for*/first for*/last for*/fold)
     
     ;; Literals
-    [(#%datum . d) (ir-literal (syntax->datum #'d))]
+    [(#%datum . d) (ir:convert-literal-to-ir (syntax->datum #'d))]
     
     ;; Variables
-    [x:id (ir-var-ref (syntax->datum #'x))]
+    [x:id (ir:convert-expr-to-ir (syntax->datum #'x))]
     
     ;; Applications
-    [(f . args) (ir-app (racket-to-ir #'f)
-                        (map racket-to-ir (syntax->list #'args))
-                        '())]
+    [(f . args) (ir:convert-app-to-ir (racket-to-ir #'f)
+                        (map racket-to-ir (syntax->list #'args)))]
+    
+    ;; Lambda expressions
+    [(lambda formals body ...)
+     (ir:convert-lambda-to-ir #'formals (syntax->list #'(body ...)))]
+    
+    ;; If expressions
+    [(if test then else)
+     (ir:convert-if-to-ir #'test #'then #'else)]
+    
+    ;; Begin expressions
+    [(begin exprs ...)
+     (ir:convert-begin-to-ir (syntax->list #'(exprs ...)))]
+    
+    ;; Let expressions
+    [(let bindings body ...)
+     (ir:convert-let-to-ir #'bindings (syntax->list #'(body ...)))]
+    
+    ;; Letrec expressions
+    [(letrec bindings body ...)
+     (ir:convert-letrec-to-ir #'bindings (syntax->list #'(body ...)))]
+    
+    ;; Cond expressions
+    [(cond clauses ... else-clause)
+     (ir:convert-cond-to-ir (syntax->list #'(clauses ...)) #'else-clause)]
+    
+    ;; Match expressions
+    [(match target clauses ...)
+     (ir:convert-match-to-ir #'target (syntax->list #'(clauses ...)))]
+    
+    ;; Quasiquote expressions
+    [(quasiquote pattern)
+     (ir:convert-quasiquote-to-ir #'pattern)]
+    
+    ;; Unquote expressions
+    [(unquote pattern)
+     (ir:convert-unquote-to-ir #'pattern)]
+    
+    ;; CTFE expressions
+    [(ctfe expr)
+     (ir:convert-ctfe-to-ir #'expr)]
     
     ;; Default case
-    [_ (ir-literal 'placeholder)]))
+    [_ (error 'racket-to-ir "Unsupported expression: ~a" (syntax->datum stx))]))
 
 (provide (all-defined-out))

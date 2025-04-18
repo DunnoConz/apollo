@@ -6,7 +6,6 @@
         language="racket"
         theme="vs-dark"
         :options="editorOptions"
-        @editorDidMount="handleEditorDidMount"
       />
     </div>
     <div class="controls">
@@ -67,10 +66,6 @@ const editorOptions = {
   scrollBeyondLastLine: false,
   readOnly: false,
   automaticLayout: true
-}
-
-const handleEditorDidMount = (editor) => {
-  console.log('Editor mounted', editor)
 }
 
 const runCode = async () => {

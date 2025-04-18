@@ -12,7 +12,24 @@
          "private/error.rkt")
 
 (module+ ir
-  (provide (all-defined-out)))
+  (provide convert-to-ir
+           convert-module-to-ir
+           convert-expr-to-ir
+           convert-literal-to-ir
+           convert-lambda-to-ir
+           convert-app-to-ir
+           convert-if-to-ir
+           convert-begin-to-ir
+           convert-let-to-ir
+           convert-letrec-to-ir
+           convert-cond-to-ir
+           convert-define-struct-to-ir
+           convert-struct-ref-to-ir
+           convert-match-to-ir
+           convert-pattern-to-ir
+           convert-quasiquote-to-ir
+           convert-unquote-to-ir
+           convert-ctfe-to-ir))
 
 ;; Pattern matching cache
 (define pattern-cache (make-hash))
@@ -118,26 +135,7 @@
 (define (get-cached-expr key)
   (hash-ref expr-cache key #f))
 
-(provide (all-from-out "ir-types.rkt")
-         convert-to-ir
-         convert-module-to-ir
-         convert-expr-to-ir
-         convert-literal-to-ir
-         convert-lambda-to-ir
-         convert-app-to-ir
-         convert-if-to-ir
-         convert-begin-to-ir
-         convert-let-to-ir
-         convert-letrec-to-ir
-         convert-cond-to-ir
-         convert-define-struct-to-ir
-         convert-struct-ref-to-ir
-         convert-match-to-ir
-         convert-pattern-to-ir
-         convert-quasiquote-to-ir
-         convert-unquote-to-ir
-         convert-ctfe-to-ir
-         racket-to-ir)
+(provide (all-from-out "ir-types.rkt"))
 
 ;; Main conversion functions
 (define (convert-to-ir stx)
@@ -252,10 +250,6 @@
 
 (define (convert-ctfe-to-ir expr)
   (ir-ctfe (convert-expr-to-ir expr)))
-
-;; Alias for convert-to-ir
-(define (racket-to-ir expr)
-  (convert-to-ir expr))
 
 (define (handle-module-path path)
   (match path

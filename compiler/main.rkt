@@ -6,7 +6,6 @@
          "./ir-types.rkt")
 
 (provide (all-from-out "./parser.rkt")
-         (all-from-out "./ir.rkt")
          (all-from-out "./codegen.rkt")
          (all-from-out "./ir-types.rkt"))
 
