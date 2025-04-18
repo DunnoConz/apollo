@@ -139,7 +139,11 @@ onBeforeUnmount(() => {
 
 watch(() => props.modelValue, (newValue) => {
   if (editor && newValue !== editor.getValue()) {
+    const currentPosition = editor.getPosition()
     editor.setValue(newValue)
+    if (currentPosition) {
+      editor.setPosition(currentPosition)
+    }
   }
 })
 

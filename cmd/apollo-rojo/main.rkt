@@ -6,8 +6,7 @@
 (require racket/file
          racket/path
          racket/system ;; Added for filesystem-change-evt
-         ;; Use relative path
-         "../../src/apollo/rojo/integration.rkt")
+         apollo/rojo/integration)
 
 ;; == Compilation Logic (Copied from build-exe.rkt for standalone use) ==
 ;; Compile a Rojo project

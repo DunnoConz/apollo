@@ -1,6 +1,5 @@
 #lang racket/base
 
-; Simplified top-level requires
 (require racket/match
          racket/set
          racket/string
@@ -9,7 +8,11 @@
          syntax/srcloc
          syntax/parse
          "ast.rkt"
-         "ir-types.rkt")
+         "ir-types.rkt"
+         "private/error.rkt")
+
+(module+ ir
+  (provide (all-defined-out)))
 
 ;; Pattern matching cache
 (define pattern-cache (make-hash))
@@ -253,3 +256,9 @@
 ;; Alias for convert-to-ir
 (define (racket-to-ir expr)
   (convert-to-ir expr))
+
+(define (handle-module-path path)
+  (match path
+    [(? symbol? s) s]
+    [(? string? s) (string->symbol s)]
+    [_ (error 'handle-module-path "Invalid module path: ~a" path)]))

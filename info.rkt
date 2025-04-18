@@ -16,28 +16,28 @@
 (define pkg-authors '(yourusername))
 
 ;; Define the main collection paths
-(define collection-search-dirs '("src"))
+(define collection-search-dirs '("."))
 (define compile-collection-zos #t)
-(define compile-collection-paths '("src"))
+(define compile-collection-paths '("."))
 
 ;; Define paths to omit from compilation
 (define compile-omit-paths '("tests" "examples" "docs" "docs-hugo" "private"))
 (define test-omit-paths '("private"))
 
 ;; Define the main module
-(define main-module "src/apollo/main.rkt")
+(define main-module "main.rkt")
 
 ;; Define the collection structure
 (define collection-links
-  '("src/apollo/compiler"
-    "src/apollo/rojo"
-    "src/apollo/std"
-    "src/apollo/ecs"))
+  '("compiler"
+    "rojo"
+    "std"
+    "ecs"))
 
 ;; Define the collection hierarchy
 (define collection-hierarchy
   '("apollo"
-    ("compiler" "src/apollo/compiler")
-    ("rojo" "src/apollo/rojo")
-    ("std" "src/apollo/std")
-    ("ecs" "src/apollo/ecs"))) 
+    ("compiler" "compiler")
+    ("rojo" "rojo")
+    ("std" "std")
+    ("ecs" "ecs"))) 
