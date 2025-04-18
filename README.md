@@ -130,3 +130,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [GitHub Issues](https://github.com/yourusername/apollo/issues) for bug reports and feature requests
 - [Discord Server](https://discord.gg/your-invite) for community support
 - [Documentation](https://yourusername.github.io/apollo/) for detailed guides 
+
+t
