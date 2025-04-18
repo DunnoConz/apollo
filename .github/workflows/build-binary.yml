@@ -34,9 +34,8 @@ jobs:
         variant: 'CS'
         version: '8.9'
 
-    - name: Install dependencies
+    - name: Install Apollo package
       run: |
-        raco pkg install --auto --scope user compiler-lib
         raco pkg install --auto --scope user --name apollo ./
 
     - name: Create output directory
