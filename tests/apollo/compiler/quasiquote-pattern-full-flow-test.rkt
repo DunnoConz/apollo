@@ -2,10 +2,13 @@
 
 (require rackunit
          rackunit/text-ui
-         ;; Use package paths
-         (submod apollo/compiler/ir ir)
-         apollo/compiler/codegen
-         apollo/compiler/parser)
+         racket/list
+         racket/pretty
+         ;; Use relative paths from test directory
+         "../../../src/apollo/compiler/parser.rkt"
+         (submod "../../../src/apollo/compiler/ir.rkt" ir)
+         "../../../src/apollo/compiler/ir-types.rkt"
+         "../../../src/apollo/compiler/codegen.rkt")
 
 (provide quasiquote-pattern-full-flow-tests)
 
@@ -45,7 +48,7 @@
 
      ;; Display the pattern
      (displayln "Quasiquote pattern IR:")
-     (pretty-print (ir-pattern->datum quasiquote-pattern))
+     (pretty-print (convert-pattern-to-ir quasiquote-pattern))
      
      ;; Check if the conversion works with our simple ir->luau function
      (check-not-exn
@@ -61,7 +64,7 @@
        (when ir-program
          (displayln "Successfully parsed quasiquote match expression")
          (displayln "IR structure:")
-         (pretty-print (ir-ir->datum ir-program))))
+         (pretty-print (convert-to-ir ir-program))))
      
      ;; We can still indicate success since we're testing just the quasiquote pattern handling
      (check-true #t "Test completed"))

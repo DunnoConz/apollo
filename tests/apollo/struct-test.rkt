@@ -1,8 +1,10 @@
 #lang racket/base
 
 (require rackunit
+         rackunit/text-ui
          racket/string
-         apollo/main)
+         ;; Use relative paths
+         "../../src/apollo/main.rkt")
 
 (provide struct-tests)
 

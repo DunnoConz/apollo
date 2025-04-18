@@ -1,8 +1,10 @@
 #lang racket/base
 
 (require rackunit
-         ;; Use main apollo package which provides the function
-         apollo/main)
+         rackunit/text-ui
+         racket/string
+         ;; Use relative paths
+         "../../src/apollo/main.rkt")
 
 ;; Helper function to test a complete Racket to Luau compilation
 (define (test-compilation racket-code expected-luau)

@@ -67,32 +67,28 @@
   (match rkt-type
     ['Integer "number"]
     ['Number "number"]
-    ['Real "number"] ; Map Real to number as well
+    ['Real "number"]
     ['String "string"]
     ['Boolean "boolean"]
-    ['Void "nil"] ; Map Void to nil type or just omit? Let's map to nil for now.
-    ['Any #f] ; Map Any to no type annotation
-    ;; TODO: Add mappings for list, vector, specific struct types (e.g., (P 'pos))
-    [(? symbol? s) (symbol->string s)] ; Assume custom types match by name
-    [_ #f])) ; Default to no type annotation if unknown
+    ['Void "nil"]
+    ['Any #f]
+    [(? symbol? s) (symbol->string s)]
+    [_ #f]))
 
 ;; Maps Racket require paths/symbols to Luau require expressions (strings)
 (define (racket-path->luau-path racket-path)
   (match racket-path
-    ;; TODO: Implement more robust mapping (config file? heuristics?)
-    ;; TODO: Handle syntax objects, not just symbols/strings
-    ['"apollo/runtime" "script.Parent.runtime"] ; Example: Relative path for runtime
-    ['"roblox/HttpService" "game:GetService(\"HttpService\")"] ; Example: Service
-    ['"roblox/Players" "game:GetService(\"Players\")"] ; Example: Service
-    ['"shared/utils" "game.ReplicatedStorage.Shared.Utils"] ; Example: ModuleScript
-    [(? string? p) (format "script.Parent.%s" p)] ; Reverted to plain format
+    ['"apollo/runtime" "script.Parent.runtime"]
+    ['"roblox/HttpService" "game:GetService(\"HttpService\")"]
+    ['"roblox/Players" "game:GetService(\"Players\")"]
+    ['"shared/utils" "game.ReplicatedStorage.Shared.Utils"]
+    [(? string? p) (format "script.Parent.%s" p)]
     [(? symbol? s)
      (let ([s-str (symbol->string s)])
        (cond
-         [(string-contains? s-str "/") ; Likely a path string encoded as symbol
-          (format "script.Parent.%s" s-str)] ; Reverted to plain format
-         [else ; Assume it's a local variable/binding, not a path require
-          #f]))] ; Return #f to indicate not a require path
+         [(string-contains? s-str "/")
+          (format "script.Parent.%s" s-str)]
+         [else #f]))]
     [_ (error 'racket-path->luau-path "Cannot map Racket path: ~s" racket-path)]))
 
 ;; Helper function to indent a string

@@ -1,9 +1,11 @@
 #lang racket/base
 
 (require rackunit
-         ;; Use package paths
-         apollo/compiler/types
-         apollo/compiler/codegen) ; For codegen functions like luau-ast->string
+         rackunit/text-ui
+         ;; Use relative paths
+         "../../src/apollo/compiler/types.rkt"
+         "../../src/apollo/compiler/codegen.rkt"
+         "../../src/apollo/compiler/ir-types.rkt") ; For ir-program and ir-literal
 
 ;; Test suite for Luau AST functionality
 (define luau-tests
@@ -11,49 +13,49 @@
    "Luau AST Tests"
    
    (test-case "Number literal"
-     (check-equal? (luau-ast->string (luau:luau-literal 42)) "42"))
+     (check-equal? (ir->luau (ir-literal 42)) "42"))
    
    (test-case "String literal"
-     (check-equal? (luau-ast->string (luau:luau-literal "hello")) "\"hello\""))
+     (check-equal? (ir->luau (ir-literal "hello")) "\"hello\""))
    
    (test-case "Boolean literal"
-     (check-equal? (luau-ast->string (luau:luau-literal #t)) "true")
-     (check-equal? (luau-ast->string (luau:luau-literal #f)) "false"))
+     (check-equal? (ir->luau (ir-literal #t)) "true")
+     (check-equal? (ir->luau (ir-literal #f)) "false"))
    
    (test-case "Nil literal"
-     (check-equal? (luau-ast->string (luau:luau-literal 'null)) "nil"))
+     (check-equal? (ir->luau (ir-literal 'null)) "nil"))
    
    (test-case "Binary operation"
-     (check-equal? (luau-ast->string 
-                    (luau:luau-binop '+
-                                     (luau:luau-literal 1)
-                                     (luau:luau-literal 2)))
-                   "(1 + 2)"))
+     (check-equal? (ir->luau 
+                    (ir-app (ir-var-ref '+)
+                           (list (ir-literal 1) (ir-literal 2))
+                           '()))
+                   "1 + 2"))
    
    (test-case "Function definition"
-     (check-equal? (luau-ast->string 
-                    (luau:luau-function-def 
-                     "add" 
-                     (list (luau:luau-var "a") (luau:luau-var "b"))
-                     (list (luau:luau-return
-                            (luau:luau-binop '+
-                                             (luau:luau-var "a")
-                                             (luau:luau-var "b"))))))
-                   "local function add(a, b)\n  return (a + b)\nend"))
+     (check-equal? (ir->luau 
+                    (ir-define 'add
+                              (ir-lambda '(a b)
+                                        '()
+                                        (list (ir-app (ir-var-ref '+)
+                                                     (list (ir-var-ref 'a)
+                                                           (ir-var-ref 'b))
+                                                     '())))))
+                   "local function add(a, b)\n  return a + b\nend"))
    
    (test-case "If statement"
-     (check-equal? (luau-ast->string 
-                    (luau:luau-if
-                     (luau:luau-binop '> 
-                                    (luau:luau-var "x")
-                                    (luau:luau-literal 0))
-                     (luau:luau-block (list (luau:luau-return (luau:luau-literal 1))))
-                     (luau:luau-block (list (luau:luau-return (luau:luau-literal 0))))))
-                   "\tif x > 0 then\n\t\treturn 1\n\telse\n\t\treturn 0\n\tend"))
+     (check-equal? (ir->luau 
+                    (ir-if (ir-app (ir-var-ref '>)
+                                  (list (ir-var-ref 'x)
+                                        (ir-literal 0))
+                                  '())
+                          (ir-literal 1)
+                          (ir-literal 0)))
+                   "if x > 0 then\n  1\nelse\n  0\nend"))
    
    (test-case "Local variable declaration"
-     (check-equal? (luau-ast->string 
-                    (luau:luau-assign-local "x" (luau:luau-literal 10)))
+     (check-equal? (ir->luau 
+                    (ir-define 'x (ir-literal 10)))
                    "local x = 10"))))
 
 (provide luau-tests) 

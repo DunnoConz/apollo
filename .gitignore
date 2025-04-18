@@ -15,14 +15,6 @@ scribblings/*.html
 scribblings/*.css
 scribblings/*.js
 
-# Hugo specific
-docs-hugo/public/
-docs-hugo/resources/_gen/
-docs-hugo/.hugo_build.lock
-.hugo_build.lock
-public/
-resources/
-
 # Node (in case we add any JS tools)
 node_modules/
 package-lock.json

@@ -3,8 +3,8 @@
 ;; Main entry point for the Apollo library (`require apollo`)
 
 (require (for-syntax racket/base)
-         racket/match ; Often useful for users of the library
-         racket/list  ; Often useful for users of the library
+         racket/match
+         racket/list
          
          ;; Core compiler functionality
          "compiler/parser.rkt"
@@ -26,9 +26,8 @@
 ;; Re-export Rojo functions
 (provide (all-from-out "rojo/integration.rkt"))
 
-;; Helper function that combines pipeline steps (similar to old compiler-main)
+;; Helper function that combines pipeline steps
 (define (compile-racket-string-to-luau str)
-  ;; Add error handling later if needed (from error.rkt?)
   (let* ([racket-ast (parse-racket-string str)]
          [ir (racket-to-ir racket-ast)]
          [luau-ast (ir->luau ir)]

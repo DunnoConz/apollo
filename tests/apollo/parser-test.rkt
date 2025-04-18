@@ -1,6 +1,11 @@
 #lang racket/base
+
 (require rackunit
-         apollo/compiler/parser)
+         rackunit/text-ui
+         ;; Use relative paths
+         "../../src/apollo/compiler/parser.rkt"
+         (submod "../../src/apollo/compiler/ir.rkt" ir)
+         "../../src/apollo/compiler/ir-types.rkt")
 
 (provide parser-tests)
 

@@ -1,6 +1,1 @@
-[submodule "docs-hugo/themes/blowfish"]
-	path = docs-hugo/themes/blowfish
-	url = https://github.com/nunocoracao/blowfish.git
-[submodule "docs-hugo/docs-hugo/themes/hugo-book"]
-	path = docs-hugo/docs-hugo/themes/hugo-book
-	url = https://github.com/alex-shpak/hugo-book
+# No submodules currently needed
