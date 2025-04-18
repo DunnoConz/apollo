@@ -7,12 +7,12 @@
          racket/list  ; Often useful for users of the library
          
          ;; Core compiler functionality
-         apollo/compiler/parser
-         apollo/compiler/ir
-         apollo/compiler/codegen
+         "compiler/parser.rkt"
+         "compiler/ir.rkt"
+         "compiler/codegen.rkt"
          
          ;; Optional Rojo integration
-         apollo/rojo/integration)
+         "rojo/integration.rkt")
 
 ;; Re-export core compilation pipeline function
 (provide compile-racket-string-to-luau)
@@ -24,7 +24,7 @@
 (provide luau-ast->string)
 
 ;; Re-export Rojo functions
-(provide (all-from-out apollo/rojo/integration))
+(provide (all-from-out "rojo/integration.rkt"))
 
 ;; Helper function that combines pipeline steps (similar to old compiler-main)
 (define (compile-racket-string-to-luau str)
@@ -36,4 +36,4 @@
     luau-str))
 
 ;; Re-export IR module functions using prefixes
-(provide (prefix-out ir: (all-from-out apollo/compiler/ir))) 
+(provide (prefix-out ir: (all-from-out "compiler/ir.rkt"))) 

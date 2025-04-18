@@ -31,11 +31,13 @@
 (define collection-links
   '("src/apollo/compiler"
     "src/apollo/rojo"
-    "src/apollo/std"))
+    "src/apollo/std"
+    "src/apollo/ecs"))
 
 ;; Define the collection hierarchy
 (define collection-hierarchy
   '("apollo"
     ("compiler" "src/apollo/compiler")
     ("rojo" "src/apollo/rojo")
-    ("std" "src/apollo/std"))) 
+    ("std" "src/apollo/std")
+    ("ecs" "src/apollo/ecs"))) 
