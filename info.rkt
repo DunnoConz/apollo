@@ -13,13 +13,11 @@
 (define version "0.1")
 (define pkg-authors '(yourusername))
 
-;; Tell Racket where to find the collections
-(define collection-search-dirs '("src"))
-
 ;; Define the main collection paths
-(define compile-collection-zos #f)
-(define compile-collection-paths '("src"))
+(define collection-search-dirs '("."))
+(define compile-collection-zos #t)
+(define compile-collection-paths '("."))
 
-;; Define the main collection
-(define compile-omit-paths '("private"))
+;; Define paths to omit from compilation
+(define compile-omit-paths '("tests" "examples" "docs" "docs-hugo" "private"))
 (define test-omit-paths '("private")) 
