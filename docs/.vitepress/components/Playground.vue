@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import MonacoEditor from '@monaco-editor/component'
+import MonacoEditor from 'monaco-editor-vue3'
 import { loader } from '@monaco-editor/loader'
 
 // Initialize Monaco
