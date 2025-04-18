@@ -4,10 +4,12 @@
 (define deps '("base"
                "rackunit-lib"
                "scribble-lib"
-               "racket-doc"))
+               "racket-doc"
+))
 (define build-deps '("scribble-lib"
                     "racket-doc"
-                    "rackunit-lib"))
+                    "rackunit-lib"
+))
 (define scribblings '(("scribblings/apollo.scrbl" ())))
 (define pkg-desc "A Racket to Luau compiler for Roblox game development")
 (define version "0.1")
