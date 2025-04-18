@@ -9,7 +9,7 @@
          "ctfe.rkt"
          racket/string)
 
-(provide ir->luau luau-ast->string)
+(provide ir->luau luau-ast->string ir-pattern->luau)
 
 (struct luau-quasiquote (pattern) #:prefab)
 (struct luau-unquote (pattern) #:prefab)
@@ -278,4 +278,57 @@
   (cond
     [(luau-quasiquote? node) 'luau-quasiquote]
     [(luau-unquote? node) 'luau-unquote]
-    [else (error 'luau-node-type "Unsupported node type: ~a" node)])) 
+    [else (error 'luau-node-type "Unsupported node type: ~a" node)]))
+
+;; Convert IR patterns to Luau code
+(define (ir-pattern->luau ir)
+  (match ir
+    [(ir-pat-quasiquote pattern)
+     (ir-pattern->luau pattern)]
+    
+    [(ir-pat-list elements tail)
+     (let ([compiled-elements (map ir-pattern->luau elements)])
+       (cond
+         ;; Function definition
+         [(and (>= (length compiled-elements) 3)
+               (equal? (first compiled-elements) 'function))
+          (format "local function ~a(~a)\n~a\nend"
+                  (second compiled-elements)
+                  (third compiled-elements)
+                  (fourth compiled-elements))]
+         
+         ;; If expression
+         [(and (>= (length compiled-elements) 4)
+               (equal? (first compiled-elements) 'if))
+          (format "if ~a then\n    return ~a\nelse\n    return ~a\nend"
+                  (second compiled-elements)
+                  (third compiled-elements)
+                  (fourth compiled-elements))]
+         
+         ;; Binary operations
+         [(and (= (length compiled-elements) 3)
+               (member (first compiled-elements) '(+ - * / < > <= >= ==)))
+          (format "(~a ~a ~a)"
+                  (second compiled-elements)
+                  (first compiled-elements)
+                  (third compiled-elements))]
+         
+         ;; Function call
+         [(>= (length compiled-elements) 2)
+          (format "~a(~a)"
+                  (first compiled-elements)
+                  (string-join (cdr compiled-elements) ", "))]
+         
+         [else
+          (string-join compiled-elements " ")]))]
+    
+    [(ir-pat-literal value)
+     (format "~a" value)]
+    
+    [(ir-pat-var name)
+     (symbol->string name)]
+    
+    [(ir-pat-unquote pattern)
+     (ir-pattern->luau pattern)]
+    
+    [else ""])) 
