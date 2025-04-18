@@ -36,8 +36,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        raco pkg install --auto --scope installation compiler-lib
-        raco pkg install --auto --name apollo ./
+        raco pkg install --auto --scope user compiler-lib
+        raco pkg install --auto --scope user --name apollo ./
 
     - name: Create output directory
       run: mkdir -p out
