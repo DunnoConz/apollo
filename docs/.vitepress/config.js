@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress'
+import server from './server'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -12,7 +13,8 @@ export default defineConfig({
       { text: 'Tutorials', link: '/tutorials/' },
       { text: 'How-to Guides', link: '/how-to/' },
       { text: 'Reference', link: '/reference/' },
-      { text: 'Explanation', link: '/explanation/' }
+      { text: 'Explanation', link: '/explanation/' },
+      { text: 'Playground', link: '/playground' }
     ],
 
     sidebar: [
@@ -56,11 +58,42 @@ export default defineConfig({
           { text: 'Type System', link: '/explanation/type-system' },
           { text: 'Compilation Process', link: '/explanation/compilation' }
         ]
+      },
+      {
+        text: 'Guide',
+        items: [
+          { text: 'Introduction', link: '/guide/' },
+          { text: 'Getting Started', link: '/guide/getting-started' },
+          { text: 'Playground', link: '/playground' }
+        ]
       }
     ],
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/DunnoConz/apollo' } // Use actual repo URL
     ]
+  },
+  vue: {
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => tag === 'monaco-editor'
+      }
+    }
+  },
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
+  },
+  vite: {
+    server: {
+      hmr: {
+        port: 3000
+      }
+    }
   }
 }) 
