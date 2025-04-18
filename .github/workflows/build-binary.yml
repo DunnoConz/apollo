@@ -36,7 +36,7 @@ jobs:
 
     - name: Install Apollo package
       run: |
-        raco pkg install --auto --scope user --link --name apollo .
+        raco pkg install --auto --scope user --link --name apollo "$(pwd)"
 
     - name: Create output directory
       run: mkdir -p out
