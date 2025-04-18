@@ -29,15 +29,19 @@
 
 ;; Define the collection structure
 (define collection-links
-  '("compiler"
+  '("cmd"
+    "compiler"
     "rojo"
     "std"
-    "ecs"))
+    "ecs"
+    "src"))
 
 ;; Define the collection hierarchy
 (define collection-hierarchy
   '("apollo"
+    ("cmd" "cmd")
     ("compiler" "compiler")
     ("rojo" "rojo")
     ("std" "std")
-    ("ecs" "ecs"))) 
+    ("ecs" "ecs")
+    ("src" "src"))) 
