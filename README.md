@@ -1,11 +1,15 @@
 # Apollo: A Racket to Luau Compiler
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 <p align="center">
   <img src="the_logo.jpg" width="200" alt="Apollo Logo">
 </p>
 
 [![Build Status](https://github.com/yourusername/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/apollo/actions/workflows/ci.yml)
+=======
+[![Build Status](https://github.com/dunnoconz/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/dunnoconz/apollo/actions/workflows/ci.yml)
+>>>>>>> 3982852 (Update README.md)
 =======
 [![Build Status](https://github.com/dunnoconz/apollo/actions/workflows/ci.yml/badge.svg)](https://github.com/dunnoconz/apollo/actions/workflows/ci.yml)
 >>>>>>> 3982852 (Update README.md)
