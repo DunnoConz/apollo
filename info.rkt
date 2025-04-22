@@ -18,7 +18,7 @@
 
 ;; Update scribblings path to be relative to package root
 (define scribblings '(("src/apollo/scribblings/apollo.scrbl" ())))
-(define version "0.1.16")
+(define version "0.1.17")
 (define pkg-desc "A Racket to Luau compiler for Roblox game development")
 (define pkg-authors '("apollo-developers"))
 
