@@ -83,9 +83,22 @@ else
     echo "No scribblings directory found"
 fi
 
-# Update paths in main.rkt to point to the correct locations
-sed -i.bak 's|"src/apollo/compiler/main.rkt"|"compiler/main.rkt"|g' "$TEMP_DIR/apollo/main.rkt"
+# Fix paths in main.rkt
+echo "Fixing paths in main.rkt..."
+sed -i.bak 's|"src/apollo/compiler/main"|"compiler/main"|g' "$TEMP_DIR/apollo/main.rkt"
 rm -f "$TEMP_DIR/apollo/main.rkt.bak"
+
+# Fix DSL files
+echo "Fixing DSL files..."
+if [ -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt" ]; then
+    sed -i.bak 's|(message|#;(message|g' "$TEMP_DIR/apollo/dsls/shout-dsl.rkt"
+    rm -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.bak"
+fi
+
+if [ -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt" ]; then
+    sed -i.bak 's|(in-syntax|#;(in-syntax|g' "$TEMP_DIR/apollo/dsls/test_dsl.rkt"
+    rm -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt.bak"
+fi
 
 # Debug: Print package directory structure
 echo "Package directory structure:"
@@ -94,15 +107,17 @@ ls -la "$TEMP_DIR/apollo"
 
 # Install base dependencies first
 echo "Installing base dependencies..."
-"$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib || true
+"$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib syntax-color-lib || true
 
-# Create a temporary info.rkt with minimal dependencies
+# Create a temporary info.rkt with required dependencies
 cat > "$TEMP_DIR/apollo/info.rkt" << EOF
 #lang info
 (define collection "apollo")
-(define deps '("base"))
+(define deps '("base"
+              "syntax-color-lib"
+              "parser-tools-lib"))
 (define build-deps '())
-(define version "0.1.12")
+(define version "0.1.13")
 EOF
 
 # Install the package directly with linking
