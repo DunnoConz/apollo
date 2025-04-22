@@ -54,13 +54,32 @@ cp "$SCRIPT_DIR"/main.rkt "$COLLECTIONS_DIR/apollo/"
 cp "$SCRIPT_DIR"/installer.rkt "$COLLECTIONS_DIR/apollo/"
 cp "$SCRIPT_DIR"/setup.rkt "$COLLECTIONS_DIR/apollo/"
 
-# Copy source directories
-cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$COLLECTIONS_DIR/apollo/compiler/" || true
-cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$COLLECTIONS_DIR/apollo/rojo/" || true
-cp -r "$SCRIPT_DIR/src/apollo/std"/* "$COLLECTIONS_DIR/apollo/std/" || true
-cp -r "$SCRIPT_DIR/src/apollo/dsls"/* "$COLLECTIONS_DIR/apollo/dsls/" || true
-cp -r "$SCRIPT_DIR/src/apollo/ecs"/* "$COLLECTIONS_DIR/apollo/ecs/" || true
-cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$COLLECTIONS_DIR/apollo/scribblings/" || true
+# Copy source directories with proper error handling
+echo "Copying compiler files..."
+cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$COLLECTIONS_DIR/apollo/compiler/" || echo "No compiler files to copy"
+
+echo "Copying rojo files..."
+cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$COLLECTIONS_DIR/apollo/rojo/" || echo "No rojo files to copy"
+
+echo "Copying std files..."
+cp -r "$SCRIPT_DIR/src/apollo/std"/* "$COLLECTIONS_DIR/apollo/std/" || echo "No std files to copy"
+
+echo "Copying dsls files..."
+cp -r "$SCRIPT_DIR/src/apollo/dsls"/* "$COLLECTIONS_DIR/apollo/dsls/" || echo "No dsls files to copy"
+
+echo "Copying ecs files..."
+if [ -d "$SCRIPT_DIR/src/apollo/ecs" ] && [ -n "$(ls -A "$SCRIPT_DIR/src/apollo/ecs")" ]; then
+    cp -r "$SCRIPT_DIR/src/apollo/ecs"/* "$COLLECTIONS_DIR/apollo/ecs/"
+else
+    echo "No ecs files to copy"
+fi
+
+echo "Copying scribblings files..."
+if [ -d "$SCRIPT_DIR/src/apollo/scribblings" ] && [ -n "$(ls -A "$SCRIPT_DIR/src/apollo/scribblings")" ]; then
+    cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$COLLECTIONS_DIR/apollo/scribblings/"
+else
+    echo "No scribblings files to copy"
+fi
 
 # Debug: Print collections directory structure
 echo "Collections directory structure:"
@@ -78,6 +97,7 @@ ls -la "$COLLECTIONS_DIR/apollo"
 
 # Step 2: Install the package
 echo "Installing Apollo as a local package..."
+cd "$SCRIPT_DIR"  # Make sure we're in the right directory
 "$RACO_CMD" pkg install --copy --auto || {
     echo "Error: Failed to install Apollo package"
     rm -rf "$COLLECTIONS_DIR"
