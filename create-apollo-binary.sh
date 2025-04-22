@@ -94,14 +94,10 @@ ls -la "$TEMP_DIR/apollo"
 echo "Installing base dependencies..."
 "$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib || true
 
-# Create collection link
-echo "Creating collection link..."
-"$RACO_CMD" link apollo "$TEMP_DIR/apollo"
-
-# Install the package
+# Install the package directly
 echo "Installing package..."
 cd "$TEMP_DIR"
-"$RACO_CMD" pkg install --copy --batch --deps search-auto || {
+"$RACO_CMD" pkg install --copy --batch --deps search-auto --link apollo || {
     echo "Error: Failed to install Apollo package"
     exit 1
 }
