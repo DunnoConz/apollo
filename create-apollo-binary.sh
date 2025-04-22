@@ -17,10 +17,27 @@ fi
 echo "Using raco from: $(which $RACO_CMD)"
 
 echo "This script will create an Apollo compiler binary by:"
-echo "1. Installing Apollo as a local Racket package"
-echo "2. Creating a simple wrapper script that uses raco apollo"
+echo "1. Setting up package collection links"
+echo "2. Installing Apollo as a local Racket package"
+echo "3. Creating a simple wrapper script that uses raco apollo"
 
-# Step 1: Install the package
+# Step 1: Set up collection links
+echo "Setting up collection links..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+
+# Remove any existing apollo package first
+"$RACO_CMD" pkg remove --force apollo || true
+
+# Create collection links
+"$RACO_CMD" link apollo "$SCRIPT_DIR"
+"$RACO_CMD" link apollo/compiler "$SCRIPT_DIR/src/apollo/compiler"
+"$RACO_CMD" link apollo/rojo "$SCRIPT_DIR/src/apollo/rojo"
+"$RACO_CMD" link apollo/std "$SCRIPT_DIR/src/apollo/std"
+"$RACO_CMD" link apollo/dsls "$SCRIPT_DIR/src/apollo/dsls"
+"$RACO_CMD" link apollo/ecs "$SCRIPT_DIR/src/apollo/ecs"
+"$RACO_CMD" link apollo/scribblings "$SCRIPT_DIR/src/apollo/scribblings"
+
+# Step 2: Install the package
 echo "Installing Apollo as a local package..."
 "$RACO_CMD" pkg install --copy --auto || {
     echo "Error: Failed to install Apollo package"
@@ -30,7 +47,7 @@ echo "Installing Apollo as a local package..."
 # Get version from info.rkt
 VERSION=$("$RACO_CMD" eval -e "(require setup/getinfo) (define info (get-info/full \".\" #:namespace '(version))) (display (info 'version))")
 
-# Step 2: Create a wrapper script
+# Step 3: Create a wrapper script
 echo "Creating apollo-bin wrapper script..."
 cat > apollo-bin << EOF
 #!/bin/bash
