@@ -48,8 +48,13 @@ mkdir -p "$COLLECTIONS_DIR/apollo/dsls"
 mkdir -p "$COLLECTIONS_DIR/apollo/ecs"
 mkdir -p "$COLLECTIONS_DIR/apollo/scribblings"
 
-# Copy files instead of symlinks (more reliable in CI)
-cp -r "$SCRIPT_DIR"/* "$COLLECTIONS_DIR/apollo/"
+# Copy main package files
+cp "$SCRIPT_DIR"/info.rkt "$COLLECTIONS_DIR/apollo/"
+cp "$SCRIPT_DIR"/main.rkt "$COLLECTIONS_DIR/apollo/"
+cp "$SCRIPT_DIR"/installer.rkt "$COLLECTIONS_DIR/apollo/"
+cp "$SCRIPT_DIR"/setup.rkt "$COLLECTIONS_DIR/apollo/"
+
+# Copy source directories
 cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$COLLECTIONS_DIR/apollo/compiler/" || true
 cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$COLLECTIONS_DIR/apollo/rojo/" || true
 cp -r "$SCRIPT_DIR/src/apollo/std"/* "$COLLECTIONS_DIR/apollo/std/" || true
