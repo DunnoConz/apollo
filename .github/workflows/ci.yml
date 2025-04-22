@@ -32,4 +32,17 @@ jobs:
       run: raco setup apollo
     
     - name: Run tests
-      run: raco test -p apollo 
+      run: raco test -p apollo
+      
+    - name: Generate test coverage
+      run: raco cover -b -f coveralls -p apollo
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          coverage/**
+          test-results/**
+        retention-days: 30 
