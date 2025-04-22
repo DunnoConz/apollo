@@ -3,15 +3,18 @@
 # Apollo compiler installation and binary creation
 set -e  # Exit on any error
 
-# Get the raco path (same as in installer.rkt)
-RACO_PATH=${RACO_PATH:-"/opt/homebrew/bin/raco"}
-
-# Verify raco exists
-if ! command -v "$RACO_PATH" &> /dev/null; then
-    echo "Error: raco not found at $RACO_PATH"
+# Get the raco path (first check RACO_PATH, then look in PATH)
+if [ -n "$RACO_PATH" ]; then
+    RACO_CMD="$RACO_PATH"
+elif command -v raco &> /dev/null; then
+    RACO_CMD="raco"
+else
+    echo "Error: raco not found in PATH and RACO_PATH not set"
     echo "Please install Racket or set RACO_PATH environment variable"
     exit 1
 fi
+
+echo "Using raco from: $(which $RACO_CMD)"
 
 echo "This script will create an Apollo compiler binary by:"
 echo "1. Installing Apollo as a local Racket package"
@@ -19,13 +22,13 @@ echo "2. Creating a simple wrapper script that uses raco apollo"
 
 # Step 1: Install the package
 echo "Installing Apollo as a local package..."
-"$RACO_PATH" pkg install --copy --auto || {
+"$RACO_CMD" pkg install --copy --auto || {
     echo "Error: Failed to install Apollo package"
     exit 1
 }
 
 # Get version from info.rkt
-VERSION=$("$RACO_PATH" eval -e "(require setup/getinfo) (define info (get-info/full \".\" #:namespace '(version))) (display (info 'version))")
+VERSION=$("$RACO_CMD" eval -e "(require setup/getinfo) (define info (get-info/full \".\" #:namespace '(version))) (display (info 'version))")
 
 # Step 2: Create a wrapper script
 echo "Creating apollo-bin wrapper script..."
@@ -39,7 +42,14 @@ cat > apollo-bin << EOF
 SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
 # Run Apollo using raco
-"$RACO_PATH" apollo "\$@"
+if [ -n "\$RACO_PATH" ]; then
+    "\$RACO_PATH" apollo "\$@"
+elif command -v raco &> /dev/null; then
+    raco apollo "\$@"
+else
+    echo "Error: raco not found in PATH and RACO_PATH not set"
+    exit 1
+fi
 EOF
 
 chmod +x apollo-bin || {
