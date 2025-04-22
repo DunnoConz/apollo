@@ -96,16 +96,15 @@ if [ -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt" ]; then
 #lang racket
 
 (require racket/syntax
-         syntax/parse
+         syntax/parse/define
          "../compiler/ir.rkt"
          "../compiler/ir-types.rkt")
 
 (provide shout)
 
-(define-syntax (shout stx)
-  (syntax-parse stx
-    [(_ msg:expr)
-     #'(display (string-append (string-upcase (format "~a" msg)) "\n"))]))
+(define-syntax-parser shout
+  [(_ msg:expr)
+   #'(display (string-append (string-upcase (format "~a" msg)) "\n"))])
 EOF
     mv "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.tmp" "$TEMP_DIR/apollo/dsls/shout-dsl.rkt"
 fi
@@ -116,18 +115,17 @@ if [ -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt" ]; then
 #lang racket
 
 (require racket/syntax
-         syntax/parse
+         syntax/parse/define
          "../compiler/ir.rkt"
          "../compiler/ir-types.rkt")
 
 (provide test-dsl)
 
-(define-syntax (test-dsl stx)
-  (syntax-parse stx
-    [(_ expr ...)
-     #'(begin
-         (display "Running tests...\n")
-         expr ...)]))
+(define-syntax-parser test-dsl
+  [(_ expr:expr ...)
+   #'(begin
+       (display "Running tests...\n")
+       expr ...)])
 EOF
     mv "$TEMP_DIR/apollo/dsls/test_dsl.rkt.tmp" "$TEMP_DIR/apollo/dsls/test_dsl.rkt"
 fi
@@ -147,10 +145,9 @@ cat > "$TEMP_DIR/apollo/info.rkt" << EOF
 (define collection "apollo")
 (define deps '("base"
               "syntax-color-lib"
-              "parser-tools-lib"
-              "syntax-parse-lib"))
+              "parser-tools-lib"))
 (define build-deps '())
-(define version "0.1.14")
+(define version "0.1.15")
 EOF
 
 # Install the package directly with linking
