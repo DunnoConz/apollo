@@ -13,7 +13,12 @@
 ;; Use package requires instead of relative paths
 (require apollo/compiler/parser
          apollo/compiler/codegen
-         apollo/compiler/ir)
+         apollo/compiler/ir
+         apollo/compiler/language-registry
+         apollo/dsls/test_dsl)
+
+;; Register the test DSL
+(register-apollo-language! 'apollo/test-dsl test-dsl:parse test-dsl:expand)
 
 ;; Optional import of Rojo integration if available
 (define use-rojo? #f)
@@ -35,12 +40,43 @@
                                                   input-file 
                                                   (exn-message e))))])
     (define racket-code (file->string input-file))
-    (define racket-ast (parse-racket-string racket-code))
-    (define ir (racket-to-ir racket-ast))
-    (define luau-ast (ir->luau ir))
-    (define luau-code (luau-ast->string luau-ast))
-    (with-output-to-file output-file #:exists 'replace (lambda () (display luau-code)))
-    (displayln (format "Successfully compiled to ~a" output-file))))
+    
+    ;; --- Check for #lang apollo/... --- 
+    (define first-line
+      (with-input-from-string racket-code read-line))
+    
+    (define ir
+      (let ([lang-match (regexp-match #rx"^#lang\\s+([^\\s]+)" first-line)])
+        (if (and lang-match (string-prefix? (list-ref lang-match 1) "apollo/"))
+            ;; Apollo DSL Path
+            (let* ([lang-string (list-ref lang-match 1)]
+                   [lang-sym (string->symbol lang-string)]
+                   [handlers (lookup-apollo-language lang-sym)])
+              (if handlers
+                  (begin
+                    (displayln (format "Using Apollo DSL: ~a" lang-string))
+                    (match-let ([(list parse-fn expand-fn) handlers])
+                      (let* ([initial-syntax (parse-fn racket-code input-file)]
+                             [expanded-ir (expand-fn initial-syntax input-file)])
+                        ;; TODO: Validate expanded-ir is a valid IR structure?
+                        expanded-ir)))
+                  (begin
+                    (displayln (format "Warning: Apollo DSL '~a' found but no handlers registered. Falling back to Racket parser." lang-string))
+                    ;; Fallback to standard Racket parsing
+                    (let* ([racket-ast (parse-racket-string racket-code)]
+                           [standard-ir (racket-to-ir racket-ast)])
+                      standard-ir))))
+            ;; Default Racket Path
+            (let* ([racket-ast (parse-racket-string racket-code)]
+                   [standard-ir (racket-to-ir racket-ast)])
+              standard-ir))))
+    
+    ;; --- Continue with IR -> Luau --- 
+    (when ir ;; Ensure IR was actually generated
+      (define luau-ast (ir->luau ir))
+      (define luau-code (luau-ast->string luau-ast))
+      (with-output-to-file output-file #:exists 'replace (lambda () (display luau-code)))
+      (displayln (format "Successfully compiled to ~a" output-file)))))
 
 ;; Compile a Rojo project
 (define (compile-project input-dir output-dir)

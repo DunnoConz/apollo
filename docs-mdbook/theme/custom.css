@@ -1,0 +1,115 @@
+/* Custom styling for Apollo documentation */
+
+:root {
+    --apollo-primary: #4a9eff;
+    --apollo-secondary: #ff6b6b;
+    --apollo-accent: #845ef7;
+}
+
+/* Typography improvements */
+.content {
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--apollo-primary);
+    margin-top: 2em;
+    margin-bottom: 1em;
+}
+
+/* Code blocks */
+pre {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+code {
+    font-family: 'Fira Code', 'Source Code Pro', monospace;
+}
+
+/* Callouts */
+.warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.info {
+    background-color: #cce5ff;
+    border-left: 4px solid var(--apollo-primary);
+    padding: 1em;
+    margin: 1em 0;
+}
+
+.tip {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 1em;
+    margin: 1em 0;
+}
+
+/* Navigation improvements */
+.sidebar {
+    font-size: 0.95em;
+}
+
+.sidebar h2 {
+    font-size: 1.2em;
+    color: var(--apollo-accent);
+}
+
+/* Links */
+a {
+    color: var(--apollo-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+th, td {
+    padding: 0.75em;
+    border: 1px solid #dee2e6;
+}
+
+th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --apollo-primary: #66b3ff;
+        --apollo-secondary: #ff8585;
+        --apollo-accent: #9775fa;
+    }
+
+    pre {
+        background-color: #2d2d2d;
+    }
+
+    .warning {
+        background-color: #332701;
+    }
+
+    .info {
+        background-color: #01223f;
+    }
+
+    .tip {
+        background-color: #0f2a1b;
+    }
+} 

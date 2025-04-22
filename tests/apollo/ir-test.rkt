@@ -77,4 +77,30 @@
                     '(ir-begin ((ir-literal "/* Inlined module: #f */")
                                (ir-lambda (x) ((ir-var-ref x)))
                                (ir-begin ())))
-                    "Should convert a lambda expression to IR datum"))))) 
+                    "Should convert a lambda expression to IR datum")))
+
+   (test-case "Convert cond expression"
+     (let ([ir (convert-expr-to-ir #'(cond
+                                      [(= x 0) 'zero]
+                                      [(= x 1) 'one]
+                                      [else 'other]))])
+       (check-pred ir-cond? ir)
+       (check-equal? (length (ir-cond-clauses ir)) 2)
+       (check-pred list? (ir-cond-else ir))
+       (let ([first-clause (car (ir-cond-clauses ir))])
+         (check-pred ir-app? (car first-clause))
+         (check-pred ir-literal? (car (cdr first-clause))))))
+
+   (test-case "Convert match expression"
+     (let ([ir (convert-expr-to-ir #'(match x
+                                       [(list a b) (+ a b)]
+                                       [(vector x) x]
+                                       [_ 'default]))])
+       (check-pred ir-match? ir)
+       (check-equal? (length (ir-match-clauses ir)) 3)
+       (let ([first-clause (car (ir-match-clauses ir))])
+         (check-pred ir-pat-list? (car first-clause))
+         (check-pred ir-app? (car (cdr first-clause))))))))
+
+(module+ test
+  (run-tests ir-tests)) 

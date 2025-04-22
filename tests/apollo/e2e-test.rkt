@@ -4,7 +4,15 @@
          rackunit/text-ui
          racket/string
          ;; Use relative paths
-         "../../src/apollo/main.rkt")
+         "../../src/apollo/compiler/parser.rkt"
+         (submod "../../src/apollo/compiler/ir.rkt" ir)
+         "../../src/apollo/compiler/codegen.rkt")
+
+;; Helper function to compile Racket string to Luau
+(define (compile-racket-string-to-luau str)
+  (let* ([ast (parse-racket-string str)]
+         [ir (convert-to-ir ast)])
+    (ir->luau ir)))
 
 ;; Helper function to test a complete Racket to Luau compilation
 (define (test-compilation racket-code expected-luau)

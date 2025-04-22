@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Apollo compiler wrapper
+# Usage: ./apollo-bin input.rkt -o output.luau
+
+# Run Apollo using raco
+raco apollo "$@"

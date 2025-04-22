@@ -80,15 +80,21 @@
     (string-join processed-lines "\n")))
 
 (define (parse-racket-string str [source-name "string-input"])
-  (let ([processed-str (remove-lang-directive str)])
-    (with-input-from-string processed-str
-      (lambda ()
-        (let ([port (current-input-port)])
-          (let loop ([exprs '()])
-            (let ([expr (read-syntax source-name port)])
-              (if (eof-object? expr)
-                  (reverse exprs)
-                  (loop (cons expr exprs))))))))))
+  (let* ([processed-str (remove-lang-directive str)]
+         [exprs (with-input-from-string processed-str
+                 (lambda ()
+                   (let ([port (current-input-port)])
+                     (let loop ([exprs '()])
+                       (let ([expr (read-syntax source-name port)])
+                         (if (eof-object? expr)
+                             (reverse exprs)
+                             (loop (cons expr exprs))))))))])
+    (if (null? exprs)
+        (error 'parse-racket-string "Empty input")
+        (let ([body (if (= 1 (length exprs))
+                       (car exprs)
+                       (datum->syntax #f (cons 'begin exprs)))])
+          (datum->syntax #f `(module default racket/base ,body))))))
 
 (define (parse-program code-input [source-path #f])
   (parameterize ([current-module-path source-path])

@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags
+
+jobs:
+  build:
+    name: Build Apollo
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            binary: apollo-bin
+          - os: macos-latest
+            platform: macos
+            binary: apollo-bin
+          - os: windows-latest
+            platform: windows
+            binary: apollo-bin.exe
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for tags
+          
+      - name: Set up Racket
+        uses: Bogdanp/setup-racket@v1.9
+        with:
+          architecture: 'x64'
+          distribution: 'full'
+          variant: 'CS'
+          version: '8.10'
+          
+      - name: Build Apollo
+        shell: bash
+        run: |
+          chmod +x create-apollo-binary.sh
+          ./create-apollo-binary.sh
+          
+      - name: Rename binary for platform
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" != "windows" ]; then
+            mv apollo-bin apollo-bin-${{ matrix.platform }}
+          else
+            mv apollo-bin.exe apollo-bin-${{ matrix.platform }}.exe
+          fi
+          
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: apollo-${{ matrix.platform }}
+          path: apollo-bin-${{ matrix.platform }}*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+          
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            apollo-*/apollo-bin-*
+          body: |
+            Apollo ${{ steps.get_version.outputs.VERSION }}
+            
+            ## Binaries
+            - `apollo-bin-linux`: Linux x64 binary
+            - `apollo-bin-macos`: macOS x64 binary
+            - `apollo-bin-windows.exe`: Windows x64 binary
+            
+            ## What's Changed
+            For full details, see the [CHANGELOG.md](CHANGELOG.md)
+            
+            ## Installation
+            1. Download the appropriate binary for your platform
+            2. Follow the installation instructions in the [documentation](docs-mdbook/src/tutorials/getting-started.md) 

@@ -1,11 +1,11 @@
 #lang racket/base
 
-(require "./parser.rkt"
+(require "./parser-main.rkt"
          "./ir.rkt"
          "./codegen.rkt"
          "./ir-types.rkt")
 
-(provide (all-from-out "./parser.rkt")
+(provide (all-from-out "./parser-main.rkt")
          (all-from-out "./codegen.rkt")
          (all-from-out "./ir-types.rkt")
          compile-to-luau)

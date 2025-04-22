@@ -2,15 +2,20 @@
 
 (require rackunit
          rackunit/text-ui
+         racket/syntax
          ;; Use relative paths
          "../../src/apollo/compiler/parser.rkt"
          (submod "../../src/apollo/compiler/ir.rkt" ir)
          "../../src/apollo/compiler/codegen.rkt"
          "../../src/apollo/compiler/types.rkt"
          "../../src/apollo/compiler/ir-types.rkt"
-         "../../src/apollo/compiler/luau-ast.rkt")
+         "../../src/apollo/compiler/luau-ast.rkt"
+         "../../src/apollo/dsls/shout-dsl.rkt")
 
-(provide compiler-test-suite)
+(provide compiler-test-suite compiler-tests)
+
+(define (wrap-in-module stx)
+  (datum->syntax #f `(module test-module racket/base ,stx)))
 
 (define compiler-test-suite
   (test-suite
@@ -57,14 +62,14 @@
    
    ;; Test case 1: Simple definition
    (test-case "Simple define"
-     (define racket-code "(define x 10)")
-     (define luau-code (ir->luau (convert-to-ir (parse-racket-string racket-code))))
+     (define racket-code (wrap-in-module #'(define x 10)))
+     (define luau-code (ir->luau (convert-to-ir racket-code)))
      (check-match luau-code #rx"local x = 10"))
 
     ;; Test case 2: Simple function
     (test-case "Simple function"
-     (define racket-code "(define (f x) (* x 2))")
-     (define ir (convert-to-ir (parse-racket-string racket-code)))
+     (define racket-code (wrap-in-module #'(define (f x) (* x 2))))
+     (define ir (convert-to-ir racket-code))
      (define luau-ast (ir->luau ir))
      (check-match luau-ast #rx"function f\\(x\\)")
      (check-match luau-ast #rx"return x \\* 2"))

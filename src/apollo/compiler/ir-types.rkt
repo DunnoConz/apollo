@@ -31,6 +31,7 @@
 (struct ir-pat-struct (name fields) #:transparent)
 (struct ir-pat-quasiquote (pattern) #:transparent)
 (struct ir-pat-unquote (pattern) #:transparent)
+(struct ir-pat-cons (head tail) #:transparent)
 (struct ir-ctfe (expr) #:transparent)
 (struct ir-pred (test) #:transparent)
 (struct ir-and-pat (pred pat) #:transparent)

@@ -1,45 +1,49 @@
-#lang info
+#lang setup/infotab
 
+(define install-collection "installer.rkt")
+(define compile-omit-paths '("tests" "examples" "private"))
 (define collection "apollo")
 (define deps '("base"
-               "rackunit-lib"
-               "scribble-lib"
-               "racket-doc"
-))
-(define build-deps '("scribble-lib"
-                    "racket-doc"
-                    "rackunit-lib"
-))
-(define scribblings '(("src/apollo/scribblings/apollo.scrbl" ())))
-(define pkg-desc "A Racket to Luau compiler for Roblox game development")
-(define version "0.1")
-(define pkg-authors '(yourusername))
+              "rackunit-lib"  ; Added for testing support
+              "racket-doc"    ; Added for documentation
+              "scribble-lib")) ; Added for documentation generation
+(define build-deps '())
 
-;; Define the main collection paths
+;; Point to the source directory for collection search
 (define collection-search-dirs '("src"))
-(define compile-collection-zos #t)
 (define compile-collection-paths '("src"))
 
-;; Define paths to omit from compilation
-(define compile-omit-paths '("tests" "examples" "private"))
-(define test-omit-paths '("private"))
-
 ;; Define the main module
-(define main-module "src/apollo/main.rkt")
+(define main-module "main.rkt")
 
-;; Define the collection structure
+(define scribblings '(("scribblings/apollo.scrbl" ())))
+(define version "0.1")
+(define pkg-desc "A Racket to Luau compiler for Roblox game development")
+(define pkg-authors '("apollo-developers"))
+
+;; Define collection links and hierarchy
 (define collection-links
-  '("src/apollo/cmd"
-    "src/apollo/compiler"
-    "src/apollo/rojo"
-    "src/apollo/std"
-    "src/apollo/scribblings"))
+  '(("apollo" "src/apollo")
+    ("apollo/compiler" "src/apollo/compiler")
+    ("apollo/rojo" "src/apollo/rojo")
+    ("apollo/std" "src/apollo/std")
+    ("apollo/dsls" "src/apollo/dsls")
+    ("apollo/ecs" "src/apollo/ecs")))
 
 ;; Define the collection hierarchy
 (define collection-hierarchy
-  '("apollo"
-    ("cmd" "src/apollo/cmd")
-    ("compiler" "src/apollo/compiler")
-    ("rojo" "src/apollo/rojo")
-    ("std" "src/apollo/std")
-    ("scribblings" "src/apollo/scribblings"))) 
+  '(("apollo" "src/apollo")
+    ("apollo/compiler" "src/apollo/compiler")
+    ("apollo/rojo" "src/apollo/rojo")
+    ("apollo/std" "src/apollo/std")
+    ("apollo/dsls" "src/apollo/dsls")
+    ("apollo/ecs" "src/apollo/ecs")))
+
+;; Define the raco commands
+(define raco-commands
+  '(("apollo" (submod "cmd/apollo/main" main) 
+             "Apollo Racket->Luau Compiler"
+             #f)
+    ("apollo-rojo" (submod "cmd/apollo-rojo/main" main)
+                  "Apollo Rojo Integration"
+                  #f))) 
