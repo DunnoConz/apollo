@@ -85,19 +85,51 @@ fi
 
 # Fix paths in main.rkt
 echo "Fixing paths in main.rkt..."
-sed -i.bak 's|"src/apollo/compiler/main"|"compiler/main"|g' "$TEMP_DIR/apollo/main.rkt"
+sed -i.bak 's|"src/apollo/compiler/main"|"apollo/compiler/main"|g' "$TEMP_DIR/apollo/main.rkt"
 rm -f "$TEMP_DIR/apollo/main.rkt.bak"
 
 # Fix DSL files
 echo "Fixing DSL files..."
 if [ -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt" ]; then
-    sed -i.bak 's|(message|#;(message|g' "$TEMP_DIR/apollo/dsls/shout-dsl.rkt"
-    rm -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.bak"
+    # Create a temporary file with the fixed content
+    cat > "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.tmp" << 'EOF'
+#lang racket
+
+(require racket/syntax
+         syntax/parse
+         "../compiler/ir.rkt"
+         "../compiler/ir-types.rkt")
+
+(provide shout)
+
+(define-syntax (shout stx)
+  (syntax-parse stx
+    [(_ msg:expr)
+     #'(display (string-append (string-upcase (format "~a" msg)) "\n"))]))
+EOF
+    mv "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.tmp" "$TEMP_DIR/apollo/dsls/shout-dsl.rkt"
 fi
 
 if [ -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt" ]; then
-    sed -i.bak 's|(in-syntax|#;(in-syntax|g' "$TEMP_DIR/apollo/dsls/test_dsl.rkt"
-    rm -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt.bak"
+    # Create a temporary file with the fixed content
+    cat > "$TEMP_DIR/apollo/dsls/test_dsl.rkt.tmp" << 'EOF'
+#lang racket
+
+(require racket/syntax
+         syntax/parse
+         "../compiler/ir.rkt"
+         "../compiler/ir-types.rkt")
+
+(provide test-dsl)
+
+(define-syntax (test-dsl stx)
+  (syntax-parse stx
+    [(_ expr ...)
+     #'(begin
+         (display "Running tests...\n")
+         expr ...)]))
+EOF
+    mv "$TEMP_DIR/apollo/dsls/test_dsl.rkt.tmp" "$TEMP_DIR/apollo/dsls/test_dsl.rkt"
 fi
 
 # Debug: Print package directory structure
@@ -107,7 +139,7 @@ ls -la "$TEMP_DIR/apollo"
 
 # Install base dependencies first
 echo "Installing base dependencies..."
-"$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib syntax-color-lib || true
+"$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib syntax-color-lib parser-tools-lib || true
 
 # Create a temporary info.rkt with required dependencies
 cat > "$TEMP_DIR/apollo/info.rkt" << EOF
@@ -115,9 +147,10 @@ cat > "$TEMP_DIR/apollo/info.rkt" << EOF
 (define collection "apollo")
 (define deps '("base"
               "syntax-color-lib"
-              "parser-tools-lib"))
+              "parser-tools-lib"
+              "syntax-parse-lib"))
 (define build-deps '())
-(define version "0.1.13")
+(define version "0.1.14")
 EOF
 
 # Install the package directly with linking
