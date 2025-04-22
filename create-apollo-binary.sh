@@ -40,7 +40,6 @@ TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Create the package structure in the temporary directory
-mkdir -p "$TEMP_DIR/apollo"
 mkdir -p "$TEMP_DIR/apollo/compiler"
 mkdir -p "$TEMP_DIR/apollo/rojo"
 mkdir -p "$TEMP_DIR/apollo/std"
@@ -54,7 +53,7 @@ cp "$SCRIPT_DIR"/main.rkt "$TEMP_DIR/apollo/"
 cp "$SCRIPT_DIR"/installer.rkt "$TEMP_DIR/apollo/"
 cp "$SCRIPT_DIR"/setup.rkt "$TEMP_DIR/apollo/"
 
-# Copy source directories with proper error handling
+# Copy source directories with proper error handling and maintain directory structure
 echo "Copying compiler files..."
 cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$TEMP_DIR/apollo/compiler/" || echo "No compiler files to copy"
 
@@ -76,14 +75,17 @@ fi
 
 echo "Copying scribblings files..."
 if [ -d "$SCRIPT_DIR/src/apollo/scribblings" ]; then
-    mkdir -p "$TEMP_DIR/apollo/scribblings"
     cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$TEMP_DIR/apollo/scribblings/" || echo "No scribblings files to copy"
-    # Update scribblings path in info.rkt
+    # Comment out scribblings in info.rkt to avoid documentation build issues
     sed -i.bak 's|(define scribblings.*)|#;(define scribblings '\''(("scribblings/apollo.scrbl" ())))|' "$TEMP_DIR/apollo/info.rkt"
     rm -f "$TEMP_DIR/apollo/info.rkt.bak"
 else
     echo "No scribblings directory found"
 fi
+
+# Update paths in main.rkt to point to the correct locations
+sed -i.bak 's|"src/apollo/compiler/main.rkt"|"compiler/main.rkt"|g' "$TEMP_DIR/apollo/main.rkt"
+rm -f "$TEMP_DIR/apollo/main.rkt.bak"
 
 # Debug: Print package directory structure
 echo "Package directory structure:"
@@ -93,6 +95,15 @@ ls -la "$TEMP_DIR/apollo"
 # Install base dependencies first
 echo "Installing base dependencies..."
 "$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib || true
+
+# Create a temporary info.rkt with minimal dependencies
+cat > "$TEMP_DIR/apollo/info.rkt" << EOF
+#lang info
+(define collection "apollo")
+(define deps '("base"))
+(define build-deps '())
+(define version "0.1.12")
+EOF
 
 # Install the package directly with linking
 echo "Installing package..."
