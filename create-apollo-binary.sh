@@ -2,6 +2,7 @@
 
 # Apollo compiler installation and binary creation
 set -e  # Exit on any error
+set -x  # Print each command for debugging
 
 # Get the raco path (first check RACO_PATH, then look in PATH)
 if [ -n "$RACO_PATH" ]; then
@@ -25,30 +26,50 @@ echo "3. Creating a simple wrapper script that uses raco apollo"
 echo "Setting up collection links..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
+# Debug: Print current directory structure
+echo "Current directory structure:"
+ls -la "$SCRIPT_DIR"
+ls -la "$SCRIPT_DIR/src/apollo" || true
+
 # Remove any existing apollo package first
 "$RACO_CMD" pkg remove --force apollo || true
 
-# Create temporary directory for collection links
-COLLECTIONS_DIR="$(mktemp -d)"
+# Create a local collections directory
+COLLECTIONS_DIR="$SCRIPT_DIR/collections"
+rm -rf "$COLLECTIONS_DIR"
 mkdir -p "$COLLECTIONS_DIR"
 
-# Create symbolic links to the actual source directories
-ln -s "$SCRIPT_DIR" "$COLLECTIONS_DIR/apollo"
-ln -s "$SCRIPT_DIR/src/apollo/compiler" "$COLLECTIONS_DIR/apollo-compiler"
-ln -s "$SCRIPT_DIR/src/apollo/rojo" "$COLLECTIONS_DIR/apollo-rojo"
-ln -s "$SCRIPT_DIR/src/apollo/std" "$COLLECTIONS_DIR/apollo-std"
-ln -s "$SCRIPT_DIR/src/apollo/dsls" "$COLLECTIONS_DIR/apollo-dsls"
-ln -s "$SCRIPT_DIR/src/apollo/ecs" "$COLLECTIONS_DIR/apollo-ecs"
-ln -s "$SCRIPT_DIR/src/apollo/scribblings" "$COLLECTIONS_DIR/apollo-scribblings"
+# Create all the necessary directories
+mkdir -p "$COLLECTIONS_DIR/apollo"
+mkdir -p "$COLLECTIONS_DIR/apollo/compiler"
+mkdir -p "$COLLECTIONS_DIR/apollo/rojo"
+mkdir -p "$COLLECTIONS_DIR/apollo/std"
+mkdir -p "$COLLECTIONS_DIR/apollo/dsls"
+mkdir -p "$COLLECTIONS_DIR/apollo/ecs"
+mkdir -p "$COLLECTIONS_DIR/apollo/scribblings"
 
-# Create collection links using the temporary directory
+# Copy files instead of symlinks (more reliable in CI)
+cp -r "$SCRIPT_DIR"/* "$COLLECTIONS_DIR/apollo/"
+cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$COLLECTIONS_DIR/apollo/compiler/" || true
+cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$COLLECTIONS_DIR/apollo/rojo/" || true
+cp -r "$SCRIPT_DIR/src/apollo/std"/* "$COLLECTIONS_DIR/apollo/std/" || true
+cp -r "$SCRIPT_DIR/src/apollo/dsls"/* "$COLLECTIONS_DIR/apollo/dsls/" || true
+cp -r "$SCRIPT_DIR/src/apollo/ecs"/* "$COLLECTIONS_DIR/apollo/ecs/" || true
+cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$COLLECTIONS_DIR/apollo/scribblings/" || true
+
+# Debug: Print collections directory structure
+echo "Collections directory structure:"
+ls -la "$COLLECTIONS_DIR"
+ls -la "$COLLECTIONS_DIR/apollo"
+
+# Create collection links
 "$RACO_CMD" link apollo "$COLLECTIONS_DIR/apollo"
-"$RACO_CMD" link apollo/compiler "$COLLECTIONS_DIR/apollo-compiler"
-"$RACO_CMD" link apollo/rojo "$COLLECTIONS_DIR/apollo-rojo"
-"$RACO_CMD" link apollo/std "$COLLECTIONS_DIR/apollo-std"
-"$RACO_CMD" link apollo/dsls "$COLLECTIONS_DIR/apollo-dsls"
-"$RACO_CMD" link apollo/ecs "$COLLECTIONS_DIR/apollo-ecs"
-"$RACO_CMD" link apollo/scribblings "$COLLECTIONS_DIR/apollo-scribblings"
+"$RACO_CMD" link apollo/compiler "$COLLECTIONS_DIR/apollo/compiler"
+"$RACO_CMD" link apollo/rojo "$COLLECTIONS_DIR/apollo/rojo"
+"$RACO_CMD" link apollo/std "$COLLECTIONS_DIR/apollo/std"
+"$RACO_CMD" link apollo/dsls "$COLLECTIONS_DIR/apollo/dsls"
+"$RACO_CMD" link apollo/ecs "$COLLECTIONS_DIR/apollo/ecs"
+"$RACO_CMD" link apollo/scribblings "$COLLECTIONS_DIR/apollo/scribblings"
 
 # Step 2: Install the package
 echo "Installing Apollo as a local package..."
