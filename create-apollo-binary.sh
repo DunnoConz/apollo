@@ -31,90 +31,87 @@ echo "Current directory structure:"
 ls -la "$SCRIPT_DIR"
 ls -la "$SCRIPT_DIR/src/apollo" || true
 
-# Remove any existing apollo package first
+# Remove any existing apollo package and links
 "$RACO_CMD" pkg remove --force apollo || true
+"$RACO_CMD" link -r apollo || true
 
-# Create a local collections directory
-COLLECTIONS_DIR="$SCRIPT_DIR/collections"
-rm -rf "$COLLECTIONS_DIR"
-mkdir -p "$COLLECTIONS_DIR"
+# Create a temporary directory for package installation
+TEMP_DIR="$(mktemp -d)"
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
-# Create the collection structure
-mkdir -p "$COLLECTIONS_DIR/apollo"
-mkdir -p "$COLLECTIONS_DIR/apollo/compiler"
-mkdir -p "$COLLECTIONS_DIR/apollo/rojo"
-mkdir -p "$COLLECTIONS_DIR/apollo/std"
-mkdir -p "$COLLECTIONS_DIR/apollo/dsls"
-mkdir -p "$COLLECTIONS_DIR/apollo/ecs"
-mkdir -p "$COLLECTIONS_DIR/apollo/scribblings"
+# Create the package structure in the temporary directory
+mkdir -p "$TEMP_DIR/apollo"
+mkdir -p "$TEMP_DIR/apollo/compiler"
+mkdir -p "$TEMP_DIR/apollo/rojo"
+mkdir -p "$TEMP_DIR/apollo/std"
+mkdir -p "$TEMP_DIR/apollo/dsls"
+mkdir -p "$TEMP_DIR/apollo/ecs"
+mkdir -p "$TEMP_DIR/apollo/scribblings"
 
 # Copy main package files
-cp "$SCRIPT_DIR"/info.rkt "$COLLECTIONS_DIR/apollo/"
-cp "$SCRIPT_DIR"/main.rkt "$COLLECTIONS_DIR/apollo/"
-cp "$SCRIPT_DIR"/installer.rkt "$COLLECTIONS_DIR/apollo/"
-cp "$SCRIPT_DIR"/setup.rkt "$COLLECTIONS_DIR/apollo/"
+cp "$SCRIPT_DIR"/info.rkt "$TEMP_DIR/apollo/"
+cp "$SCRIPT_DIR"/main.rkt "$TEMP_DIR/apollo/"
+cp "$SCRIPT_DIR"/installer.rkt "$TEMP_DIR/apollo/"
+cp "$SCRIPT_DIR"/setup.rkt "$TEMP_DIR/apollo/"
 
 # Copy source directories with proper error handling
 echo "Copying compiler files..."
-cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$COLLECTIONS_DIR/apollo/compiler/" || echo "No compiler files to copy"
+cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$TEMP_DIR/apollo/compiler/" || echo "No compiler files to copy"
 
 echo "Copying rojo files..."
-cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$COLLECTIONS_DIR/apollo/rojo/" || echo "No rojo files to copy"
+cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$TEMP_DIR/apollo/rojo/" || echo "No rojo files to copy"
 
 echo "Copying std files..."
-cp -r "$SCRIPT_DIR/src/apollo/std"/* "$COLLECTIONS_DIR/apollo/std/" || echo "No std files to copy"
+cp -r "$SCRIPT_DIR/src/apollo/std"/* "$TEMP_DIR/apollo/std/" || echo "No std files to copy"
 
 echo "Copying dsls files..."
-cp -r "$SCRIPT_DIR/src/apollo/dsls"/* "$COLLECTIONS_DIR/apollo/dsls/" || echo "No dsls files to copy"
+cp -r "$SCRIPT_DIR/src/apollo/dsls"/* "$TEMP_DIR/apollo/dsls/" || echo "No dsls files to copy"
 
 echo "Copying ecs files..."
 if [ -d "$SCRIPT_DIR/src/apollo/ecs" ] && [ -n "$(ls -A "$SCRIPT_DIR/src/apollo/ecs")" ]; then
-    cp -r "$SCRIPT_DIR/src/apollo/ecs"/* "$COLLECTIONS_DIR/apollo/ecs/"
+    cp -r "$SCRIPT_DIR/src/apollo/ecs"/* "$TEMP_DIR/apollo/ecs/"
 else
     echo "No ecs files to copy"
 fi
 
 echo "Copying scribblings files..."
-if [ -d "$SCRIPT_DIR/src/apollo/scribblings" ] && [ -n "$(ls -A "$SCRIPT_DIR/src/apollo/scribblings")" ]; then
-    cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$COLLECTIONS_DIR/apollo/scribblings/"
+if [ -d "$SCRIPT_DIR/src/apollo/scribblings" ]; then
+    mkdir -p "$TEMP_DIR/apollo/scribblings"
+    cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$TEMP_DIR/apollo/scribblings/" || echo "No scribblings files to copy"
+    # Update scribblings path in info.rkt
+    sed -i.bak 's|(define scribblings.*)|#;(define scribblings '\''(("scribblings/apollo.scrbl" ())))|' "$TEMP_DIR/apollo/info.rkt"
+    rm -f "$TEMP_DIR/apollo/info.rkt.bak"
 else
-    echo "No scribblings files to copy"
+    echo "No scribblings directory found"
 fi
 
-# Debug: Print collections directory structure
-echo "Collections directory structure:"
-ls -la "$COLLECTIONS_DIR"
-ls -la "$COLLECTIONS_DIR/apollo"
+# Debug: Print package directory structure
+echo "Package directory structure:"
+ls -la "$TEMP_DIR"
+ls -la "$TEMP_DIR/apollo"
 
-# Create collection links
-echo "Creating collection links..."
-"$RACO_CMD" pkg install --copy --deps search-auto || true  # Install base dependencies first
+# Install base dependencies first
+echo "Installing base dependencies..."
+"$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib || true
 
-# Create a temporary directory for the package
-TEMP_DIR="$(mktemp -d)"
-cp -r "$COLLECTIONS_DIR/apollo" "$TEMP_DIR/"
-
-# Create collection links using the temporary directory
+# Create collection link
+echo "Creating collection link..."
 "$RACO_CMD" link apollo "$TEMP_DIR/apollo"
 
-# Install the package from the temporary directory
+# Install the package
+echo "Installing package..."
 cd "$TEMP_DIR"
-"$RACO_CMD" pkg install --copy --deps search-auto || {
+"$RACO_CMD" pkg install --copy --batch --deps search-auto || {
     echo "Error: Failed to install Apollo package"
-    rm -rf "$TEMP_DIR"
-    rm -rf "$COLLECTIONS_DIR"
     exit 1
 }
 
-# Clean up temporary directory
-rm -rf "$TEMP_DIR"
-
 # Get version from info.rkt
-VERSION=$("$RACO_CMD" eval -e "(require setup/getinfo) (define info (get-info/full \".\" #:namespace '(version))) (display (info 'version))")
+VERSION=$("$RACO_CMD" eval -e "(require setup/getinfo) (define info (get-info/full \"$SCRIPT_DIR\" #:namespace '(version))) (display (info 'version))")
 
 # Step 3: Create a wrapper script
 echo "Creating apollo-bin wrapper script..."
-cat > apollo-bin << EOF
+cat > "$SCRIPT_DIR/apollo-bin" << EOF
 #!/bin/bash
 
 # Apollo compiler wrapper v$VERSION
@@ -134,14 +131,10 @@ else
 fi
 EOF
 
-chmod +x apollo-bin || {
+chmod +x "$SCRIPT_DIR/apollo-bin" || {
     echo "Error: Failed to make apollo-bin executable"
-    rm -rf "$COLLECTIONS_DIR"
     exit 1
 }
-
-# Clean up
-rm -rf "$COLLECTIONS_DIR"
 
 echo "Done! Apollo v$VERSION binary wrapper created."
 echo "You can now use ./apollo-bin to compile Racket files to Luau."
