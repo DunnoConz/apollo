@@ -39,7 +39,7 @@ COLLECTIONS_DIR="$SCRIPT_DIR/collections"
 rm -rf "$COLLECTIONS_DIR"
 mkdir -p "$COLLECTIONS_DIR"
 
-# Create all the necessary directories
+# Create the collection structure
 mkdir -p "$COLLECTIONS_DIR/apollo"
 mkdir -p "$COLLECTIONS_DIR/apollo/compiler"
 mkdir -p "$COLLECTIONS_DIR/apollo/rojo"
@@ -87,22 +87,27 @@ ls -la "$COLLECTIONS_DIR"
 ls -la "$COLLECTIONS_DIR/apollo"
 
 # Create collection links
-"$RACO_CMD" link apollo "$COLLECTIONS_DIR/apollo"
-"$RACO_CMD" link apollo/compiler "$COLLECTIONS_DIR/apollo/compiler"
-"$RACO_CMD" link apollo/rojo "$COLLECTIONS_DIR/apollo/rojo"
-"$RACO_CMD" link apollo/std "$COLLECTIONS_DIR/apollo/std"
-"$RACO_CMD" link apollo/dsls "$COLLECTIONS_DIR/apollo/dsls"
-"$RACO_CMD" link apollo/ecs "$COLLECTIONS_DIR/apollo/ecs"
-"$RACO_CMD" link apollo/scribblings "$COLLECTIONS_DIR/apollo/scribblings"
+echo "Creating collection links..."
+"$RACO_CMD" pkg install --copy --deps search-auto || true  # Install base dependencies first
 
-# Step 2: Install the package
-echo "Installing Apollo as a local package..."
-cd "$SCRIPT_DIR"  # Make sure we're in the right directory
-"$RACO_CMD" pkg install --copy --auto || {
+# Create a temporary directory for the package
+TEMP_DIR="$(mktemp -d)"
+cp -r "$COLLECTIONS_DIR/apollo" "$TEMP_DIR/"
+
+# Create collection links using the temporary directory
+"$RACO_CMD" link apollo "$TEMP_DIR/apollo"
+
+# Install the package from the temporary directory
+cd "$TEMP_DIR"
+"$RACO_CMD" pkg install --copy --deps search-auto || {
     echo "Error: Failed to install Apollo package"
+    rm -rf "$TEMP_DIR"
     rm -rf "$COLLECTIONS_DIR"
     exit 1
 }
+
+# Clean up temporary directory
+rm -rf "$TEMP_DIR"
 
 # Get version from info.rkt
 VERSION=$("$RACO_CMD" eval -e "(require setup/getinfo) (define info (get-info/full \".\" #:namespace '(version))) (display (info 'version))")
