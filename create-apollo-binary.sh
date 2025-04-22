@@ -50,11 +50,57 @@ cp "$SCRIPT_DIR"/setup.rkt "$TEMP_DIR/apollo/"
 
 # Copy source directories with proper error handling and maintain directory structure
 echo "Copying source files..."
-if [ -d "$SCRIPT_DIR/src/apollo" ]; then
-    cp -r "$SCRIPT_DIR/src/apollo"/* "$TEMP_DIR/apollo/"
+if [ -d "$SCRIPT_DIR/src" ]; then
+    cp -r "$SCRIPT_DIR/src"/* "$TEMP_DIR/"
 else
-    echo "Error: src/apollo directory not found"
+    echo "Error: src directory not found"
     exit 1
+fi
+
+# Copy test files maintaining directory structure
+echo "Copying test files..."
+if [ -d "$SCRIPT_DIR/tests" ]; then
+    cp -r "$SCRIPT_DIR/tests"/* "$TEMP_DIR/"
+else
+    echo "Warning: tests directory not found"
+fi
+
+# Fix DSL files
+echo "Fixing DSL files..."
+if [ -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt" ]; then
+    cat > "$TEMP_DIR/apollo/dsls/shout-dsl.rkt" << 'EOF'
+#lang racket
+
+(require racket/syntax
+         syntax/parse
+         "../compiler/ir.rkt"
+         "../compiler/ir-types.rkt")
+
+(provide shout)
+
+(define-syntax-parser shout
+  [(_ msg:expr)
+   #'(display (string-append (string-upcase (format "~a" msg)) "\n"))])
+EOF
+fi
+
+if [ -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt" ]; then
+    cat > "$TEMP_DIR/apollo/dsls/test_dsl.rkt" << 'EOF'
+#lang racket
+
+(require racket/syntax
+         syntax/parse
+         "../compiler/ir.rkt"
+         "../compiler/ir-types.rkt")
+
+(provide test-dsl)
+
+(define-syntax-parser test-dsl
+  [(_ expr:expr ...)
+   #'(begin
+       (display "Running tests...\n")
+       expr ...)])
+EOF
 fi
 
 # Debug: Print package directory structure
