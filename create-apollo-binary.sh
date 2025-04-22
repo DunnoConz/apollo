@@ -28,19 +28,33 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 # Remove any existing apollo package first
 "$RACO_CMD" pkg remove --force apollo || true
 
-# Create collection links
-"$RACO_CMD" link apollo "$SCRIPT_DIR"
-"$RACO_CMD" link apollo/compiler "$SCRIPT_DIR/src/apollo/compiler"
-"$RACO_CMD" link apollo/rojo "$SCRIPT_DIR/src/apollo/rojo"
-"$RACO_CMD" link apollo/std "$SCRIPT_DIR/src/apollo/std"
-"$RACO_CMD" link apollo/dsls "$SCRIPT_DIR/src/apollo/dsls"
-"$RACO_CMD" link apollo/ecs "$SCRIPT_DIR/src/apollo/ecs"
-"$RACO_CMD" link apollo/scribblings "$SCRIPT_DIR/src/apollo/scribblings"
+# Create temporary directory for collection links
+COLLECTIONS_DIR="$(mktemp -d)"
+mkdir -p "$COLLECTIONS_DIR"
+
+# Create symbolic links to the actual source directories
+ln -s "$SCRIPT_DIR" "$COLLECTIONS_DIR/apollo"
+ln -s "$SCRIPT_DIR/src/apollo/compiler" "$COLLECTIONS_DIR/apollo-compiler"
+ln -s "$SCRIPT_DIR/src/apollo/rojo" "$COLLECTIONS_DIR/apollo-rojo"
+ln -s "$SCRIPT_DIR/src/apollo/std" "$COLLECTIONS_DIR/apollo-std"
+ln -s "$SCRIPT_DIR/src/apollo/dsls" "$COLLECTIONS_DIR/apollo-dsls"
+ln -s "$SCRIPT_DIR/src/apollo/ecs" "$COLLECTIONS_DIR/apollo-ecs"
+ln -s "$SCRIPT_DIR/src/apollo/scribblings" "$COLLECTIONS_DIR/apollo-scribblings"
+
+# Create collection links using the temporary directory
+"$RACO_CMD" link apollo "$COLLECTIONS_DIR/apollo"
+"$RACO_CMD" link apollo/compiler "$COLLECTIONS_DIR/apollo-compiler"
+"$RACO_CMD" link apollo/rojo "$COLLECTIONS_DIR/apollo-rojo"
+"$RACO_CMD" link apollo/std "$COLLECTIONS_DIR/apollo-std"
+"$RACO_CMD" link apollo/dsls "$COLLECTIONS_DIR/apollo-dsls"
+"$RACO_CMD" link apollo/ecs "$COLLECTIONS_DIR/apollo-ecs"
+"$RACO_CMD" link apollo/scribblings "$COLLECTIONS_DIR/apollo-scribblings"
 
 # Step 2: Install the package
 echo "Installing Apollo as a local package..."
 "$RACO_CMD" pkg install --copy --auto || {
     echo "Error: Failed to install Apollo package"
+    rm -rf "$COLLECTIONS_DIR"
     exit 1
 }
 
@@ -71,8 +85,12 @@ EOF
 
 chmod +x apollo-bin || {
     echo "Error: Failed to make apollo-bin executable"
+    rm -rf "$COLLECTIONS_DIR"
     exit 1
 }
+
+# Clean up
+rm -rf "$COLLECTIONS_DIR"
 
 echo "Done! Apollo v$VERSION binary wrapper created."
 echo "You can now use ./apollo-bin to compile Racket files to Luau."
