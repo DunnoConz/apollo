@@ -40,12 +40,7 @@ TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Create the package structure in the temporary directory
-mkdir -p "$TEMP_DIR/apollo/compiler"
-mkdir -p "$TEMP_DIR/apollo/rojo"
-mkdir -p "$TEMP_DIR/apollo/std"
-mkdir -p "$TEMP_DIR/apollo/dsls"
-mkdir -p "$TEMP_DIR/apollo/ecs"
-mkdir -p "$TEMP_DIR/apollo/scribblings"
+mkdir -p "$TEMP_DIR/apollo"
 
 # Copy main package files
 cp "$SCRIPT_DIR"/info.rkt "$TEMP_DIR/apollo/"
@@ -54,80 +49,12 @@ cp "$SCRIPT_DIR"/installer.rkt "$TEMP_DIR/apollo/"
 cp "$SCRIPT_DIR"/setup.rkt "$TEMP_DIR/apollo/"
 
 # Copy source directories with proper error handling and maintain directory structure
-echo "Copying compiler files..."
-cp -r "$SCRIPT_DIR/src/apollo/compiler"/* "$TEMP_DIR/apollo/compiler/" || echo "No compiler files to copy"
-
-echo "Copying rojo files..."
-cp -r "$SCRIPT_DIR/src/apollo/rojo"/* "$TEMP_DIR/apollo/rojo/" || echo "No rojo files to copy"
-
-echo "Copying std files..."
-cp -r "$SCRIPT_DIR/src/apollo/std"/* "$TEMP_DIR/apollo/std/" || echo "No std files to copy"
-
-echo "Copying dsls files..."
-cp -r "$SCRIPT_DIR/src/apollo/dsls"/* "$TEMP_DIR/apollo/dsls/" || echo "No dsls files to copy"
-
-echo "Copying ecs files..."
-if [ -d "$SCRIPT_DIR/src/apollo/ecs" ] && [ -n "$(ls -A "$SCRIPT_DIR/src/apollo/ecs")" ]; then
-    cp -r "$SCRIPT_DIR/src/apollo/ecs"/* "$TEMP_DIR/apollo/ecs/"
+echo "Copying source files..."
+if [ -d "$SCRIPT_DIR/src/apollo" ]; then
+    cp -r "$SCRIPT_DIR/src/apollo"/* "$TEMP_DIR/apollo/"
 else
-    echo "No ecs files to copy"
-fi
-
-echo "Copying scribblings files..."
-if [ -d "$SCRIPT_DIR/src/apollo/scribblings" ]; then
-    cp -r "$SCRIPT_DIR/src/apollo/scribblings"/* "$TEMP_DIR/apollo/scribblings/" || echo "No scribblings files to copy"
-    # Comment out scribblings in info.rkt to avoid documentation build issues
-    sed -i.bak 's|(define scribblings.*)|#;(define scribblings '\''(("scribblings/apollo.scrbl" ())))|' "$TEMP_DIR/apollo/info.rkt"
-    rm -f "$TEMP_DIR/apollo/info.rkt.bak"
-else
-    echo "No scribblings directory found"
-fi
-
-# Fix paths in main.rkt
-echo "Fixing paths in main.rkt..."
-sed -i.bak 's|"src/apollo/compiler/main"|"apollo/compiler/main"|g' "$TEMP_DIR/apollo/main.rkt"
-rm -f "$TEMP_DIR/apollo/main.rkt.bak"
-
-# Fix DSL files
-echo "Fixing DSL files..."
-if [ -f "$TEMP_DIR/apollo/dsls/shout-dsl.rkt" ]; then
-    # Create a temporary file with the fixed content
-    cat > "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.tmp" << 'EOF'
-#lang racket
-
-(require racket/syntax
-         syntax/parse/define
-         "../compiler/ir.rkt"
-         "../compiler/ir-types.rkt")
-
-(provide shout)
-
-(define-syntax-parser shout
-  [(_ msg:expr)
-   #'(display (string-append (string-upcase (format "~a" msg)) "\n"))])
-EOF
-    mv "$TEMP_DIR/apollo/dsls/shout-dsl.rkt.tmp" "$TEMP_DIR/apollo/dsls/shout-dsl.rkt"
-fi
-
-if [ -f "$TEMP_DIR/apollo/dsls/test_dsl.rkt" ]; then
-    # Create a temporary file with the fixed content
-    cat > "$TEMP_DIR/apollo/dsls/test_dsl.rkt.tmp" << 'EOF'
-#lang racket
-
-(require racket/syntax
-         syntax/parse/define
-         "../compiler/ir.rkt"
-         "../compiler/ir-types.rkt")
-
-(provide test-dsl)
-
-(define-syntax-parser test-dsl
-  [(_ expr:expr ...)
-   #'(begin
-       (display "Running tests...\n")
-       expr ...)])
-EOF
-    mv "$TEMP_DIR/apollo/dsls/test_dsl.rkt.tmp" "$TEMP_DIR/apollo/dsls/test_dsl.rkt"
+    echo "Error: src/apollo directory not found"
+    exit 1
 fi
 
 # Debug: Print package directory structure
@@ -139,6 +66,16 @@ ls -la "$TEMP_DIR/apollo"
 echo "Installing base dependencies..."
 "$RACO_CMD" pkg install --batch --auto racket-doc scribble-lib syntax-color-lib parser-tools-lib || true
 
+# Get version from info.rkt (do this early as we'll use it multiple times)
+VERSION=$(grep -o '"[0-9]\+\.[0-9]\+\.[0-9]\+"' "$SCRIPT_DIR/info.rkt" | tr -d '"')
+if [ -z "$VERSION" ]; then
+    echo "Error: Could not extract version from info.rkt"
+    echo "Expected format: (define version \"X.Y.Z\") where X, Y, Z are numbers"
+    exit 1
+fi
+
+echo "Building Apollo version $VERSION..."
+
 # Create a temporary info.rkt with required dependencies
 cat > "$TEMP_DIR/apollo/info.rkt" << EOF
 #lang info
@@ -147,7 +84,7 @@ cat > "$TEMP_DIR/apollo/info.rkt" << EOF
               "syntax-color-lib"
               "parser-tools-lib"))
 (define build-deps '())
-(define version "0.1.15")
+(define version "$VERSION")
 EOF
 
 # Install the package directly with linking
@@ -157,9 +94,6 @@ cd "$TEMP_DIR"
     echo "Error: Failed to install Apollo package"
     exit 1
 }
-
-# Get version from info.rkt
-VERSION=$("$RACO_CMD" eval -e "(require setup/getinfo) (define info (get-info/full \"$SCRIPT_DIR\" #:namespace '(version))) (display (info 'version))")
 
 # Step 3: Create a wrapper script
 echo "Creating apollo-bin wrapper script..."
